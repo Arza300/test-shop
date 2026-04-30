@@ -1,0 +1,307 @@
+// Gaming Store — Prisma schema (PostgreSQL / Neon)
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ProductType {
+  GAME
+  GIFT_CARD
+  ACCESSORY
+}
+
+enum ProductFormat {
+  DIGITAL
+  PHYSICAL
+}
+
+enum Platform {
+  PC
+  PLAYSTATION
+  XBOX
+  OTHER
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  SHIPPED
+  COMPLETED
+}
+
+enum SellableItemType {
+  PRODUCT
+  CUSTOM_SECTION_ITEM
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  reviews   Review[]
+  orders    Order[]
+  cart      Cart?
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  products  Product[]
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  title       String
+  slug        String        @unique
+  description String        @db.Text
+  price       Decimal       @db.Decimal(10, 2)
+  type        ProductType
+  format      ProductFormat
+  platform    Platform
+  stock       Int           @default(0)
+  isActive    Boolean       @default(true)
+  exclusiveBrandId String?
+  exclusiveBrand   Brand?   @relation("ExclusiveBrandProducts", fields: [exclusiveBrandId], references: [id], onDelete: Cascade)
+  categoryId  String
+  category    Category      @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  images      ProductImage[]
+  orderItems  OrderItem[] @relation("OrderItemProduct")
+  reviews     Review[]
+  cartItems   CartItem[]
+  brandLinks  BrandProduct[]
+
+  @@index([type])
+  @@index([platform])
+  @@index([categoryId])
+  @@index([isActive])
+  @@index([exclusiveBrandId])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  url       String
+  position  Int     @default(0)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model Order {
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id])
+  paymentMethodId String
+  paymentMethod   PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+  status          OrderStatus   @default(PENDING)
+  total           Decimal       @db.Decimal(10, 2)
+  shippingName    String
+  shippingLine1   String
+  shippingLine2   String?
+  shippingCity    String
+  shippingPostal  String
+  shippingCountry String        @default("US")
+  notes           String?       @db.Text
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  items           OrderItem[]
+
+  @@index([userId])
+  @@index([paymentMethodId])
+  @@index([status])
+}
+
+model PaymentMethod {
+  id                       String   @id @default(cuid())
+  name                     String
+  phoneNumber              String
+  transferProofInstruction String   @db.Text
+  supportNumber            String?
+  isActive                 Boolean  @default(true)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  orders                   Order[]
+
+  @@index([isActive])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id         String  @id @default(cuid())
+  orderId    String
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  itemType   SellableItemType
+  itemId     String
+  titleSnapshot String
+  quantity   Int
+  unitPrice  Decimal @db.Decimal(10, 2)
+  productId  String?
+  product    Product? @relation("OrderItemProduct", fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([itemType, itemId])
+  @@index([productId])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  rating    Int
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([productId, userId])
+  @@index([productId])
+}
+
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  updatedAt DateTime   @updatedAt
+  items     CartItem[]
+}
+
+model CartItem {
+  id        String  @id @default(cuid())
+  cartId    String
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+
+  @@unique([cartId, productId])
+  @@index([productId])
+}
+
+model HomeHeroSlide {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  position  Int      @default(0)
+  headline  String?
+  subline   String?
+  linkedProductId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([position])
+  @@index([linkedProductId])
+}
+
+model HomeHeroSidePanel {
+  id        String   @id
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SiteBrandingSetting {
+  id        String   @id
+  name      String?
+  logoUrl   String?
+  topStripImageUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model HomepageSectionOrder {
+  id         String   @id @default(cuid())
+  sectionKey String   @unique
+  position   Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([position])
+}
+
+model CustomStoreSection {
+  id        String                   @id @default(cuid())
+  title     String
+  showTitle Boolean                  @default(true)
+  backgroundColor String?
+  cardBackgroundColor String?
+  logoUrl   String?
+  logoTitle String?
+  logoDescription String?
+  isVisible Boolean                  @default(true)
+  position  Int                      @default(0)
+  createdAt DateTime                 @default(now())
+  updatedAt DateTime                 @updatedAt
+  items     CustomStoreSectionItem[]
+
+  @@index([isVisible])
+  @@index([position])
+}
+
+model CustomStoreSectionItem {
+  id         String             @id @default(cuid())
+  sectionId  String
+  section    CustomStoreSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title      String
+  subtitle   String?
+  imageUrl   String
+  price      Decimal            @db.Decimal(10, 2)
+  oldPrice   Decimal?           @db.Decimal(10, 2)
+  hasVariants Boolean           @default(false)
+  variants   Json?
+  stock      Int                @default(0)
+  isActive   Boolean            @default(true)
+  position   Int                @default(0)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  @@index([sectionId])
+  @@index([isActive])
+  @@index([position])
+}
+
+model Brand {
+  id        String         @id @default(cuid())
+  name      String
+  slug      String         @unique
+  logoUrl   String
+  isVisible Boolean        @default(true)
+  position  Int            @default(0)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  products  BrandProduct[]
+  exclusiveProducts Product[] @relation("ExclusiveBrandProducts")
+
+  @@index([isVisible])
+  @@index([position])
+}
+
+model BrandProduct {
+  brandId   String
+  brand     Brand   @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([brandId, productId])
+  @@index([productId])
+}
