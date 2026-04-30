@@ -33,8 +33,10 @@ function formatPrice(value: string): string {
 
 function CustomStoreSectionBlock({ section }: { section: CustomStoreSectionView }) {
   const [startIndex, setStartIndex] = useState(0);
-  const hasMoreThanThreeCards = section.items.length > 3;
-  const maxStartIndex = Math.max(0, section.items.length - 3);
+  const hasLogoImage = Boolean(section.logoUrl);
+  const visibleCardsCount = hasLogoImage ? 3 : 4;
+  const hasMoreThanVisibleCards = section.items.length > visibleCardsCount;
+  const maxStartIndex = Math.max(0, section.items.length - visibleCardsCount);
 
   useEffect(() => {
     setStartIndex((prev) => Math.min(prev, maxStartIndex));
@@ -42,10 +44,10 @@ function CustomStoreSectionBlock({ section }: { section: CustomStoreSectionView 
 
   const visibleCards = useMemo(
     () =>
-      hasMoreThanThreeCards
-        ? section.items.slice(startIndex, startIndex + 3)
-        : section.items.slice(0, 3),
-    [section.items, hasMoreThanThreeCards, startIndex]
+      hasMoreThanVisibleCards
+        ? section.items.slice(startIndex, startIndex + visibleCardsCount)
+        : section.items.slice(0, visibleCardsCount),
+    [section.items, hasMoreThanVisibleCards, startIndex, visibleCardsCount]
   );
 
   return (
@@ -57,14 +59,14 @@ function CustomStoreSectionBlock({ section }: { section: CustomStoreSectionView 
       }
       style={section.backgroundColor ? { backgroundColor: section.backgroundColor } : undefined}
     >
-      {section.showTitle || hasMoreThanThreeCards ? (
+      {section.showTitle || hasMoreThanVisibleCards ? (
         <div dir="rtl" className="mb-4 flex items-center justify-between gap-3">
           {section.showTitle ? (
             <h2 className="text-right text-xl font-black leading-tight text-white sm:text-2xl">{section.title}</h2>
           ) : (
             <span />
           )}
-          {hasMoreThanThreeCards ? (
+          {hasMoreThanVisibleCards ? (
             <Link
               href={`/shop/section/${section.id}`}
               className="rounded-md border border-white/40 bg-transparent px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
@@ -75,9 +77,9 @@ function CustomStoreSectionBlock({ section }: { section: CustomStoreSectionView 
         </div>
       ) : null}
 
-      <div dir="ltr" className="grid gap-3 lg:grid-cols-[3fr_1fr]">
+      <div dir="ltr" className={hasLogoImage ? "grid gap-3 lg:grid-cols-[3fr_1fr]" : "grid gap-3"}>
         <div className="relative order-2 lg:order-1">
-          {hasMoreThanThreeCards ? (
+          {hasMoreThanVisibleCards ? (
             <button
               type="button"
               aria-label="عرض الكروت السابقة"
@@ -89,7 +91,7 @@ function CustomStoreSectionBlock({ section }: { section: CustomStoreSectionView 
             </button>
           ) : null}
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className={hasLogoImage ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3" : "grid gap-3 sm:grid-cols-2 lg:grid-cols-4"}>
             {visibleCards.map((item) => {
               const cardColor = section.cardBackgroundColor;
               return (
@@ -150,7 +152,7 @@ function CustomStoreSectionBlock({ section }: { section: CustomStoreSectionView 
             })}
           </div>
 
-          {hasMoreThanThreeCards ? (
+          {hasMoreThanVisibleCards ? (
             <button
               type="button"
               aria-label="عرض الكروت التالية"
@@ -163,7 +165,7 @@ function CustomStoreSectionBlock({ section }: { section: CustomStoreSectionView 
           ) : null}
         </div>
 
-        {(section.logoUrl || section.logoTitle || section.logoDescription) ? (
+        {hasLogoImage ? (
           <aside className="order-1 flex flex-col items-center justify-center rounded-md bg-transparent px-4 py-5 text-center text-white lg:order-2">
             {section.logoUrl ? (
               <div className="relative mx-auto h-44 w-44 overflow-hidden rounded-md">
