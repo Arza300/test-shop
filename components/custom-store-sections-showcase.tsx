@@ -33,14 +33,22 @@ function formatPrice(value: string): string {
 
 function CustomStoreSectionBlock({ section }: { section: CustomStoreSectionView }) {
   const [startIndex, setStartIndex] = useState(0);
+  const [mobileIndex, setMobileIndex] = useState(0);
   const hasLogoImage = Boolean(section.logoUrl);
+  const sectionAccentColor = section.cardBackgroundColor ?? section.backgroundColor ?? "#1e4ca9";
   const visibleCardsCount = hasLogoImage ? 3 : 4;
   const hasMoreThanVisibleCards = section.items.length > visibleCardsCount;
+  const hasMultipleItems = section.items.length > 1;
   const maxStartIndex = Math.max(0, section.items.length - visibleCardsCount);
+  const maxMobileIndex = Math.max(0, section.items.length - 1);
 
   useEffect(() => {
     setStartIndex((prev) => Math.min(prev, maxStartIndex));
   }, [maxStartIndex]);
+
+  useEffect(() => {
+    setMobileIndex((prev) => Math.min(prev, maxMobileIndex));
+  }, [maxMobileIndex]);
 
   const visibleCards = useMemo(
     () =>
@@ -49,6 +57,61 @@ function CustomStoreSectionBlock({ section }: { section: CustomStoreSectionView 
         : section.items.slice(0, visibleCardsCount),
     [section.items, hasMoreThanVisibleCards, startIndex, visibleCardsCount]
   );
+  const renderCard = (item: CustomStoreSectionView["items"][number], wrapperClassName = "block") => {
+    const cardColor = section.cardBackgroundColor;
+    return (
+      <Link key={item.id} href={`/shop/item/${item.id}`} className={wrapperClassName}>
+        <article
+          className={
+            cardColor
+              ? "rounded-md border border-[#214aa2] p-2 text-white shadow-[0_10px_24px_rgba(0,0,0,0.28)] transition hover:-translate-y-0.5 hover:brightness-110"
+              : "rounded-md border border-[#214aa2] bg-[#072d84] p-2 text-white shadow-[0_10px_24px_rgba(0,0,0,0.28)] transition hover:-translate-y-0.5 hover:brightness-110"
+          }
+          style={cardColor ? { backgroundColor: cardColor, borderColor: cardColor } : undefined}
+        >
+          <div
+            className="rounded-sm border border-[#2d5bbd] bg-[#0a45b2] p-1"
+            style={cardColor ? { backgroundColor: cardColor, borderColor: cardColor } : undefined}
+          >
+            <div
+              className="relative aspect-square w-full overflow-hidden rounded-sm bg-[#0e5cd0]"
+              style={cardColor ? { backgroundColor: cardColor } : undefined}
+            >
+              <Image
+                src={item.imageUrl}
+                alt={item.title}
+                fill
+                className="object-cover object-center"
+                sizes="(min-width: 1024px) 22vw, (min-width: 640px) 48vw, 100vw"
+                unoptimized={shouldUnoptimizeImageSrc(item.imageUrl)}
+              />
+            </div>
+          </div>
+          <div className="space-y-2 px-1 pb-1 pt-3 text-center">
+            <p dir="auto" className="line-clamp-2 min-h-9 text-base leading-7 text-white hover:underline">
+              {item.title}
+            </p>
+            {item.subtitle ? (
+              <p dir="auto" className="line-clamp-2 min-h-8 text-sm leading-6 text-blue-100/80">
+                {item.subtitle}
+              </p>
+            ) : null}
+            <p dir="ltr" className="min-w-0 text-[18px] font-black tracking-tight text-white [unicode-bidi:isolate]">
+              <span className="inline-block whitespace-nowrap">EGP {formatPrice(item.price)}</span>
+            </p>
+            {item.oldPrice ? (
+              <p dir="ltr" className="text-xs text-blue-100/70 line-through">
+                EGP {formatPrice(item.oldPrice)}
+              </p>
+            ) : null}
+            <span className="inline-flex items-center justify-center rounded-md border border-white/30 px-3 py-1.5 text-xs font-semibold text-white">
+              عرض التفاصيل
+            </span>
+          </div>
+        </article>
+      </Link>
+    );
+  };
 
   return (
     <div
@@ -85,71 +148,48 @@ function CustomStoreSectionBlock({ section }: { section: CustomStoreSectionView 
               aria-label="عرض الكروت السابقة"
               onClick={() => setStartIndex((prev) => Math.max(0, prev - 1))}
               disabled={startIndex === 0}
-              className="absolute -left-3 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/20 bg-transparent p-2 text-white shadow-md transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+              className="absolute -left-3 top-1/2 z-10 hidden -translate-y-1/2 rounded-full border border-white/20 bg-transparent p-2 text-white shadow-md transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 sm:block"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
           ) : null}
 
-          <div className={hasLogoImage ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3" : "grid gap-3 sm:grid-cols-2 lg:grid-cols-4"}>
-            {visibleCards.map((item) => {
-              const cardColor = section.cardBackgroundColor;
-              return (
-                <Link key={item.id} href={`/shop/item/${item.id}`} className="block">
-                  <article
-                    className={
-                      cardColor
-                        ? "rounded-md border border-[#214aa2] p-2 text-white shadow-[0_10px_24px_rgba(0,0,0,0.28)] transition hover:-translate-y-0.5 hover:brightness-110"
-                        : "rounded-md border border-[#214aa2] bg-[#072d84] p-2 text-white shadow-[0_10px_24px_rgba(0,0,0,0.28)] transition hover:-translate-y-0.5 hover:brightness-110"
-                    }
-                    style={cardColor ? { backgroundColor: cardColor, borderColor: cardColor } : undefined}
-                  >
-                    <div
-                      className="rounded-sm border border-[#2d5bbd] bg-[#0a45b2] p-1"
-                      style={cardColor ? { backgroundColor: cardColor, borderColor: cardColor } : undefined}
-                    >
-                      <div
-                        className="relative aspect-square w-full overflow-hidden rounded-sm bg-[#0e5cd0]"
-                        style={cardColor ? { backgroundColor: cardColor } : undefined}
-                      >
-                        <Image
-                          src={item.imageUrl}
-                          alt={item.title}
-                          fill
-                          className="object-cover object-center"
-                          sizes="(min-width: 1024px) 22vw, (min-width: 640px) 48vw, 100vw"
-                          unoptimized={shouldUnoptimizeImageSrc(item.imageUrl)}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2 px-1 pb-1 pt-3 text-center">
-                      <p dir="auto" className="line-clamp-2 min-h-9 text-base leading-7 text-white hover:underline">
-                        {item.title}
-                      </p>
-                      {item.subtitle ? (
-                        <p dir="auto" className="line-clamp-2 min-h-8 text-sm leading-6 text-blue-100/80">
-                          {item.subtitle}
-                        </p>
-                      ) : null}
-                      <p
-                        dir="ltr"
-                        className="min-w-0 text-[18px] font-black tracking-tight text-white [unicode-bidi:isolate]"
-                      >
-                        <span className="inline-block whitespace-nowrap">EGP {formatPrice(item.price)}</span>
-                      </p>
-                      {item.oldPrice ? (
-                        <p dir="ltr" className="text-xs text-blue-100/70 line-through">
-                          EGP {formatPrice(item.oldPrice)}
-                        </p>
-                      ) : null}
-                      <span className="inline-flex items-center justify-center rounded-md border border-white/30 px-3 py-1.5 text-xs font-semibold text-white">
-                        عرض التفاصيل
-                      </span>
-                    </div>
-                  </article>
-                </Link>
-              );
-            })}
+          <div className="relative sm:hidden">
+            {hasMultipleItems ? (
+              <button
+                type="button"
+                aria-label="عرض المنتج السابق"
+                onClick={() => setMobileIndex((prev) => Math.max(0, prev - 1))}
+                disabled={mobileIndex === 0}
+                className="absolute -left-2 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border text-white shadow-[0_8px_18px_rgba(0,0,0,0.35)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+                style={{ borderColor: sectionAccentColor, backgroundColor: sectionAccentColor }}
+              >
+                <ChevronLeft className="h-7 w-7" />
+              </button>
+            ) : null}
+
+            {section.items[mobileIndex] ? renderCard(section.items[mobileIndex]) : null}
+
+            {hasMultipleItems ? (
+              <button
+                type="button"
+                aria-label="عرض المنتج التالي"
+                onClick={() => setMobileIndex((prev) => Math.min(maxMobileIndex, prev + 1))}
+                disabled={mobileIndex >= maxMobileIndex}
+                className="absolute -right-2 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border text-white shadow-[0_8px_18px_rgba(0,0,0,0.35)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+                style={{ borderColor: sectionAccentColor, backgroundColor: sectionAccentColor }}
+              >
+                <ChevronRight className="h-7 w-7" />
+              </button>
+            ) : null}
+          </div>
+
+          <div
+            className={
+              hasLogoImage ? "hidden gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-3" : "hidden gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-4"
+            }
+          >
+            {visibleCards.map((item) => renderCard(item))}
           </div>
 
           {hasMoreThanVisibleCards ? (
@@ -158,7 +198,7 @@ function CustomStoreSectionBlock({ section }: { section: CustomStoreSectionView 
               aria-label="عرض الكروت التالية"
               onClick={() => setStartIndex((prev) => Math.min(maxStartIndex, prev + 1))}
               disabled={startIndex >= maxStartIndex}
-              className="absolute -right-3 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/20 bg-transparent p-2 text-white shadow-md transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+              className="absolute -right-3 top-1/2 z-10 hidden -translate-y-1/2 rounded-full border border-white/20 bg-transparent p-2 text-white shadow-md transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 sm:block"
             >
               <ChevronRight className="h-5 w-5" />
             </button>
