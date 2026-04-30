@@ -34,6 +34,25 @@ Next.js 14 (App Router) e‑commerce demo: games, gift cards, and accessories, w
 4. Open [http://localhost:3000](http://localhost:3000).  
    **Seed logins (after `db:seed`):** `admin@example.com` / `Password123!` and `user@example.com` / `Password123!`
 
+## Deploying on Vercel (NextAuth)
+
+Vercel does **not** read your local `.env` file. Missing auth env in Production causes **`/api/auth/error?error=Configuration`**.
+
+In **Project → Settings → Environment Variables**, set at least:
+
+| Variable | Production value |
+|---------|-------------------|
+| `NEXTAUTH_SECRET` | Strong secret (for example generate with `openssl rand -base64 32`). You can alternatively set `AUTH_SECRET` to the same value. |
+| `NEXTAUTH_URL` | Canonical site URL with HTTPS, for example `https://your-deployment.vercel.app` (match your domain exactly, no stray trailing slash unless your host uses one). |
+| `DATABASE_URL` | Same Postgres connection string you use for Neon (or your provider), with TLS if required. |
+| `DIRECT_URL` | Neon-style direct URL; same as local setup (see [.env.example](.env.example)). |
+
+Attach these to **Production** (and Preview if you want previews to authenticate). Optional keys such as `R2_*` and `STRIPE_SECRET_KEY` behave as documented above.
+
+Then **Redeploy** the latest deployment (or push a commit) so serverless functions pick up the new variables.
+
+Sanity check: `GET /api/auth/providers` should return **200 JSON** once `NEXTAUTH_SECRET` (or `AUTH_SECRET`) is set; until then NextAuth responds with configuration errors.
+
 ## R2 (optional)
 
 If `R2_*` variables are set, admin “New/Edit product” can upload files via `POST /api/upload`. Otherwise use image URLs like `/placeholder.svg` or a full HTTPS URL to your R2 public domain.
