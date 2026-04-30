@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { signInFailureToastArabic } from "@/lib/auth-sign-in-messages";
 import { toast } from "sonner";
 
 type Form = z.infer<typeof registerSchema>;
@@ -47,12 +48,13 @@ function SignUpForm() {
                 return;
               }
               const res = await signIn("credentials", { email: values.email, password: values.password, redirect: false });
-              if (res?.error) {
-                toast.success("تم إنشاء الحساب. سجّل الدخول.");
-                router.push(`/auth/sign-in?callbackUrl=${encodeURIComponent(callbackAfterAuth)}`);
+              if (res?.ok && !res?.error) {
+                router.push(callbackAfterAuth);
                 return;
               }
-              router.push(callbackAfterAuth);
+              toast.success("تم إنشاء الحساب.");
+              toast.error(signInFailureToastArabic(res?.error));
+              router.push(`/auth/sign-in?callbackUrl=${encodeURIComponent(callbackAfterAuth)}`);
             })}
           >
             <div>

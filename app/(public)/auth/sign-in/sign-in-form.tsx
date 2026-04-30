@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { signInFailureToastArabic } from "@/lib/auth-sign-in-messages";
 import { toast } from "sonner";
 
 type Form = z.infer<typeof loginSchema>;
@@ -32,11 +33,11 @@ export function SignInForm() {
             className="space-y-4"
             onSubmit={form.handleSubmit(async (values) => {
               const res = await signIn("credentials", { email: values.email, password: values.password, redirect: false });
-              if (res?.error) {
-                toast.error("البريد أو كلمة المرور غير صحيحة");
+              if (res?.ok && !res?.error) {
+                window.location.href = callback;
                 return;
               }
-              window.location.href = callback;
+              toast.error(signInFailureToastArabic(res?.error));
             })}
           >
             <div>
