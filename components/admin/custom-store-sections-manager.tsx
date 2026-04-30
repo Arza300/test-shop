@@ -497,14 +497,26 @@ export function CustomStoreSectionsManager() {
             title="عنوان القسم"
             description="الاسم الرئيسي للقسم كما يظهر للزائر (مثلاً: ألعاب بلايستيشن)."
           >
-            <div className="w-full max-w-xl">
-              <Label className="text-zinc-400">اسم القسم</Label>
-              <Input
-                className="mt-1.5 w-full border-zinc-700 bg-zinc-950"
-                value={newSectionTitle}
-                onChange={(e) => setNewSectionTitle(e.target.value)}
-                placeholder="اسم القسم"
-              />
+            <div className="flex w-full max-w-xl flex-col gap-2 sm:flex-row sm:items-end">
+              <div className="flex-1">
+                <Label className="text-zinc-400">اسم القسم</Label>
+                <Input
+                  className="mt-1.5 w-full border-zinc-700 bg-zinc-950"
+                  value={newSectionTitle}
+                  onChange={(e) => setNewSectionTitle(e.target.value)}
+                  placeholder="اسم القسم"
+                />
+              </div>
+              <Button
+                type="button"
+                variant={newSectionShowTitle ? "secondary" : "outline"}
+                className={
+                  newSectionShowTitle ? "border-zinc-600 bg-zinc-800 text-zinc-100" : "border-zinc-700 text-zinc-300"
+                }
+                onClick={() => setNewSectionShowTitle((prev) => !prev)}
+              >
+                {newSectionShowTitle ? "إخفاء العنوان بالرئيسية" : "إظهار العنوان بالرئيسية"}
+              </Button>
             </div>
           </AdminFormBlock>
 
@@ -787,19 +799,38 @@ export function CustomStoreSectionsManager() {
                     title="عنوان القسم"
                     description="الاسم الذي يظهر كعنوان رئيسي للقسم."
                   >
-                    <div className="w-full max-w-xl">
-                      <Label className="text-zinc-400">اسم القسم</Label>
-                      <Input
-                        className="mt-1.5 w-full border-zinc-700 bg-zinc-950"
-                        value={sectionDraft.title}
-                        onChange={(e) =>
+                    <div className="flex w-full max-w-xl flex-col gap-2 sm:flex-row sm:items-end">
+                      <div className="flex-1">
+                        <Label className="text-zinc-400">اسم القسم</Label>
+                        <Input
+                          className="mt-1.5 w-full border-zinc-700 bg-zinc-950"
+                          value={sectionDraft.title}
+                          onChange={(e) =>
+                            setSectionDrafts((prev) => ({
+                              ...prev,
+                              [section.id]: { ...sectionDraft, title: e.target.value },
+                            }))
+                          }
+                          placeholder="اسم القسم"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant={sectionDraft.showTitle ? "secondary" : "outline"}
+                        className={
+                          sectionDraft.showTitle
+                            ? "border-zinc-600 bg-zinc-800 text-zinc-100"
+                            : "border-zinc-700 text-zinc-300"
+                        }
+                        onClick={() =>
                           setSectionDrafts((prev) => ({
                             ...prev,
-                            [section.id]: { ...sectionDraft, title: e.target.value },
+                            [section.id]: { ...sectionDraft, showTitle: !sectionDraft.showTitle },
                           }))
                         }
-                        placeholder="اسم القسم"
-                      />
+                      >
+                        {sectionDraft.showTitle ? "إخفاء العنوان بالرئيسية" : "إظهار العنوان بالرئيسية"}
+                      </Button>
                     </div>
                   </AdminFormBlock>
 
