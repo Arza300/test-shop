@@ -64,7 +64,7 @@ export default async function HomePage() {
     }),
     prisma.homeHeroSidePanel.findUnique({
       where: { id: "main" },
-      select: { imageUrl: true },
+      select: { imageUrl: true, linkedProductId: true, linkedSectionId: true },
     }),
     getVisibleBrands(),
     getVisibleCustomStoreSections(),
@@ -99,6 +99,13 @@ export default async function HomePage() {
         slides={slides}
         sidePanelImageUrl={
           sidePanel?.imageUrl ? resolveImageUrlForClient(sidePanel.imageUrl) ?? sidePanel.imageUrl : null
+        }
+        sidePanelHref={
+          sidePanel?.linkedProductId
+            ? `/shop/item/${sidePanel.linkedProductId}`
+            : sidePanel?.linkedSectionId
+              ? `/shop/section/${sidePanel.linkedSectionId}`
+              : undefined
         }
       />
       {orderedSectionKeys.map((sectionKey) => {

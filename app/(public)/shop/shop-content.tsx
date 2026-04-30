@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
@@ -41,6 +41,7 @@ function useProductList() {
   const searchParams = useSearchParams();
   return useQuery({
     queryKey: ["catalog", searchParams.toString()],
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const u = new URL("/api/public/catalog", window.location.origin);
       searchParams.forEach((v, k) => u.searchParams.set(k, v));

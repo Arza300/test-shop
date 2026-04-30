@@ -216,8 +216,13 @@ model HomeHeroSlide {
 model HomeHeroSidePanel {
   id        String   @id
   imageUrl  String?
+  linkedProductId String?
+  linkedSectionId String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([linkedProductId])
+  @@index([linkedSectionId])
 }
 
 model SiteBrandingSetting {

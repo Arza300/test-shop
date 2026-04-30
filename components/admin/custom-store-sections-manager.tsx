@@ -916,44 +916,10 @@ export function CustomStoreSectionsManager() {
                     </div>
                   </AdminFormBlock>
 
-                  <Separator className="bg-zinc-800" />
-
-                  <AdminFormBlock
-                    title="ترتيب القسم"
-                    description="يحدد ترتيب ظهور هذا القسم في الصفحة الرئيسية بالنسبة للأقسام الأخرى (من أعلى لأسفل)."
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="outline"
-                        className="border-zinc-600"
-                        disabled={index === 0 || patchSectionMut.isPending}
-                        onClick={() => patchSectionMut.mutate({ sectionId: section.id, body: { move: "up" } })}
-                        title="نقل لأعلى"
-                      >
-                        <ArrowUp className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="outline"
-                        className="border-zinc-600"
-                        disabled={index === sections.length - 1 || patchSectionMut.isPending}
-                        onClick={() => patchSectionMut.mutate({ sectionId: section.id, body: { move: "down" } })}
-                        title="نقل لأسفل"
-                      >
-                        <ArrowDown className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </AdminFormBlock>
-
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch sm:justify-between sm:gap-6">
                     <div className="min-w-0 flex flex-col justify-center">
                       <p className="text-sm font-medium text-zinc-200">حفظ تعديلات القسم</p>
-                      <p className="mt-0.5 text-xs text-zinc-500">
-                        يطبق التعديلات على الحقول أعلاه. ترتيب القسم يُحفظ مباشرة عند الضغط على أعلى/أسفل.
-                      </p>
+                      <p className="mt-0.5 text-xs text-zinc-500">يطبق التعديلات على الحقول أعلاه.</p>
                       <Button
                         type="button"
                         variant="secondary"

@@ -6,7 +6,7 @@ import { PublicPageContainer } from "@/components/public-page-container";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { resolveImageUrlForClient, shouldUnoptimizeImageSrc } from "@/lib/image-url";
-import { getVisibleCustomStoreSectionById, getVisibleCustomStoreSectionPageData } from "@/lib/custom-store-sections-public";
+import { getVisibleCustomStoreSectionPageData } from "@/lib/custom-store-sections-public";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,7 @@ type PageProps = {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = params;
-  const section = await getVisibleCustomStoreSectionById(id);
+  const { section } = await getVisibleCustomStoreSectionPageData(id);
   if (!section) {
     return {
       title: "قسم غير موجود",

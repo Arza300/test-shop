@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { Platform, ProductType } from "@prisma/client";
+import { Platform, ProductType, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { resolveImageUrlForClient } from "@/lib/image-url";
 import { z } from "zod";
@@ -14,21 +14,31 @@ const catalogQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(48).default(12),
 });
 
-type CatalogItem = {
-  itemType: "CUSTOM_SECTION_ITEM";
-  id: string;
-  title: string;
-  slug: null;
-  price: string;
-  type: ProductType;
-  platform: Platform;
-  stock: number;
-  imageUrl: string | null;
-  reviewCount: number;
-  sectionId?: string;
-  sectionTitle?: string;
-  createdAt: Date;
-};
+function buildCatalogItemWhere(q: string | undefined, min: number | undefined, max: number | undefined): Prisma.CustomStoreSectionItemWhereInput {
+  return {
+    isActive: true,
+    section: {
+      isVisible: true,
+    },
+    ...(q
+      ? {
+          OR: [
+            { title: { contains: q, mode: "insensitive" } },
+            { subtitle: { contains: q, mode: "insensitive" } },
+            { section: { title: { contains: q, mode: "insensitive" } } },
+          ],
+        }
+      : {}),
+    ...(min !== undefined || max !== undefined
+      ? {
+          price: {
+            ...(min !== undefined ? { gte: min } : {}),
+            ...(max !== undefined ? { lte: max } : {}),
+          },
+        }
+      : {}),
+  };
+}
 
 export async function GET(req: NextRequest) {
   const sp = Object.fromEntries(req.nextUrl.searchParams.entries());
@@ -40,32 +50,16 @@ export async function GET(req: NextRequest) {
   const { q, min, max, page, pageSize } = parsed.data;
 
   const includeCustomSectionMatches = Boolean(q);
+  const itemWhere = buildCatalogItemWhere(q, min, max);
+  const skip = (page - 1) * pageSize;
 
-  const [customSectionItems, matchedSections] = await Promise.all([
+  const [total, customSectionItems, matchedSections] = await Promise.all([
+    prisma.customStoreSectionItem.count({ where: itemWhere }),
     prisma.customStoreSectionItem.findMany({
-      where: {
-        isActive: true,
-        section: {
-          isVisible: true,
-        },
-        ...(q
-          ? {
-              OR: [
-                { title: { contains: q, mode: "insensitive" } },
-                { subtitle: { contains: q, mode: "insensitive" } },
-                { section: { title: { contains: q, mode: "insensitive" } } },
-              ],
-            }
-          : {}),
-        ...(min !== undefined || max !== undefined
-          ? {
-              price: {
-                ...(min !== undefined ? { gte: min } : {}),
-                ...(max !== undefined ? { lte: max } : {}),
-              },
-            }
-          : {}),
-      },
+      where: itemWhere,
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: pageSize,
       include: {
         section: {
           select: {
@@ -74,8 +68,6 @@ export async function GET(req: NextRequest) {
           },
         },
       },
-      orderBy: [{ position: "asc" }, { createdAt: "desc" }],
-      take: 300,
     }),
     includeCustomSectionMatches
       ? prisma.customStoreSection.findMany({
@@ -93,44 +85,23 @@ export async function GET(req: NextRequest) {
       : Promise.resolve([]),
   ]);
 
-  const customSectionCatalogItems: CatalogItem[] = customSectionItems.map((item) => ({
-    itemType: "CUSTOM_SECTION_ITEM",
-    id: item.id,
-    title: item.title,
-    slug: null,
-    price: item.price.toString(),
-    type: ProductType.GIFT_CARD,
-    platform: Platform.OTHER,
-    stock: item.stock,
-    imageUrl: resolveImageUrlForClient(item.imageUrl) ?? item.imageUrl,
-    reviewCount: 0,
-    sectionId: item.section.id,
-    sectionTitle: item.section.title,
-    createdAt: item.createdAt,
-  }));
-
-  const all = [...customSectionCatalogItems].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  const total = all.length;
-  const start = (page - 1) * pageSize;
-  const paged = all.slice(start, start + pageSize);
-
   return NextResponse.json({
     page,
     pageSize,
     total,
-    items: paged.map((item) => ({
-      itemType: item.itemType,
+    items: customSectionItems.map((item) => ({
+      itemType: "CUSTOM_SECTION_ITEM" as const,
       id: item.id,
       title: item.title,
-      slug: item.slug,
-      price: item.price,
-      type: item.type,
-      platform: item.platform,
+      slug: null,
+      price: item.price.toString(),
+      type: ProductType.GIFT_CARD,
+      platform: Platform.OTHER,
       stock: item.stock,
-      imageUrl: item.imageUrl,
-      reviewCount: item.reviewCount,
-      sectionId: item.sectionId ?? null,
-      sectionTitle: item.sectionTitle ?? null,
+      imageUrl: resolveImageUrlForClient(item.imageUrl) ?? item.imageUrl,
+      reviewCount: 0,
+      sectionId: item.section.id,
+      sectionTitle: item.section.title,
     })),
     matchedSections,
   });

@@ -39,9 +39,11 @@ type Props = {
   slides: HomeHeroSlideVisual[];
   /** صورة البطاقة الجانبية المتوهجة (اختياري). */
   sidePanelImageUrl?: string | null;
+  /** رابط البطاقة الجانبية (اختياري). */
+  sidePanelHref?: string;
 };
 
-export function HomeHeroSection({ slides, sidePanelImageUrl }: Props) {
+export function HomeHeroSection({ slides, sidePanelImageUrl, sidePanelHref }: Props) {
   const list = slides;
   const hasSidePanelImage = Boolean(sidePanelImageUrl);
   const [i, setI] = useState(0);
@@ -200,6 +202,7 @@ export function HomeHeroSection({ slides, sidePanelImageUrl }: Props) {
 
         {hasSidePanelImage ? (
           <aside className="relative hidden min-h-[220px] overflow-hidden rounded-lg border border-emerald-500/30 bg-gradient-to-b from-slate-900 via-slate-950 to-black shadow-[0_0_30px_rgba(16,185,129,0.15)] lg:col-span-1 lg:flex lg:min-h-0 lg:flex-col lg:justify-between">
+            {sidePanelHref ? <Link href={sidePanelHref} className="absolute inset-0 z-[2]" aria-label="فتح الرابط المرتبط" /> : null}
             <div className="absolute inset-0">
               <Image
                 src={sidePanelImageUrl!}

@@ -5,7 +5,7 @@ import { PublicPageContainer } from "@/components/public-page-container";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { resolveImageUrlForClient, shouldUnoptimizeImageSrc } from "@/lib/image-url";
-import { getVisibleCustomStoreSectionNavItems, getVisibleCustomStoreSections } from "@/lib/custom-store-sections-public";
+import { getVisibleCustomStoreSections } from "@/lib/custom-store-sections-public";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +27,8 @@ function formatEgp(value: string): string {
 }
 
 export default async function ShopAllCustomSectionsPage({ searchParams }: PageProps) {
-  const [sections, navItems] = await Promise.all([getVisibleCustomStoreSections(), getVisibleCustomStoreSectionNavItems()]);
+  const sections = await getVisibleCustomStoreSections();
+  const navItems = sections.map((s) => ({ id: s.id, title: s.title }));
   const allItems = sections.flatMap((section) =>
     section.items.map((item) => ({
       ...item,

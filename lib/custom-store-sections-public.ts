@@ -1,6 +1,12 @@
+import { cache } from "react";
 import { Prisma } from "@prisma/client";
 import { resolveImageUrlForClient } from "@/lib/image-url";
 import { prisma } from "@/lib/prisma";
+
+/** Max items per section on the home showcase (carousel + "تصفح الكل"). */
+const HOME_SECTION_ITEMS_TAKE = 48;
+/** Max items when loading a single section page. */
+const SECTION_PAGE_ITEMS_TAKE = 500;
 
 type SectionWithItemsRow = {
   id: string;
@@ -49,17 +55,32 @@ type PublicSectionNavItem = {
   title: string;
 };
 
-async function queryVisibleSections(where?: { id?: string }) {
+async function queryVisibleNavSections(): Promise<Array<{ id: string; title: string }>> {
+  const rows = await prisma.customStoreSection.findMany({
+    where: {
+      isVisible: true,
+      items: { some: { isActive: true } },
+    },
+    orderBy: [{ position: "asc" }, { createdAt: "desc" }],
+    select: { id: true, title: true },
+    take: 20,
+  });
+  return rows;
+}
+
+async function queryVisibleSections(opts: { id?: string; itemsTake: number }) {
+  const { id, itemsTake } = opts;
+  const where = { isVisible: true as const, ...(id ? { id } : {}) };
   let rows: SectionWithItemsRow[];
   try {
     rows = await prisma.customStoreSection.findMany({
-      where: { isVisible: true, ...where },
+      where,
       orderBy: [{ position: "asc" }, { createdAt: "desc" }],
       include: {
         items: {
           where: { isActive: true },
           orderBy: [{ position: "asc" }, { createdAt: "desc" }],
-          take: 500,
+          take: itemsTake,
           select: {
             id: true,
             sectionId: true,
@@ -72,7 +93,7 @@ async function queryVisibleSections(where?: { id?: string }) {
           },
         },
       },
-      take: where?.id ? 1 : 20,
+      take: id ? 1 : 20,
     });
   } catch (error) {
     const isMissingShowTitleColumn =
@@ -82,7 +103,7 @@ async function queryVisibleSections(where?: { id?: string }) {
       error.meta.column.includes("showTitle");
     if (!isMissingShowTitleColumn) throw error;
     rows = await prisma.customStoreSection.findMany({
-      where: { isVisible: true, ...where },
+      where,
       orderBy: [{ position: "asc" }, { createdAt: "desc" }],
       select: {
         id: true,
@@ -95,7 +116,7 @@ async function queryVisibleSections(where?: { id?: string }) {
         items: {
           where: { isActive: true },
           orderBy: [{ position: "asc" }, { createdAt: "desc" }],
-          take: 500,
+          take: itemsTake,
           select: {
             id: true,
             sectionId: true,
@@ -108,7 +129,7 @@ async function queryVisibleSections(where?: { id?: string }) {
           },
         },
       },
-      take: where?.id ? 1 : 20,
+      take: id ? 1 : 20,
     });
   }
   return rows;
@@ -139,7 +160,7 @@ function mapSection(row: SectionWithItemsRow): PublicSectionView {
 
 export async function getVisibleCustomStoreSections() {
   try {
-    const rows = await queryVisibleSections();
+    const rows = await queryVisibleSections({ itemsTake: HOME_SECTION_ITEMS_TAKE });
     return rows.map(mapSection).filter((section) => section.items.length > 0);
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2021") {
@@ -151,10 +172,8 @@ export async function getVisibleCustomStoreSections() {
 
 export async function getVisibleCustomStoreSectionNavItems() {
   try {
-    const rows = await queryVisibleSections();
-    return rows
-      .filter((row) => row.items.length > 0)
-      .map((row) => ({ id: row.id, title: row.title }));
+    const rows = await queryVisibleNavSections();
+    return rows.map((row) => ({ id: row.id, title: row.title }));
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2021") {
       return [];
@@ -163,17 +182,21 @@ export async function getVisibleCustomStoreSectionNavItems() {
   }
 }
 
-export async function getVisibleCustomStoreSectionPageData(sectionId: string): Promise<{
+async function loadVisibleCustomStoreSectionPageData(sectionId: string): Promise<{
   section: PublicSectionView | null;
   navItems: PublicSectionNavItem[];
 }> {
   try {
-    const rows = await queryVisibleSections();
-    const populatedRows = rows.filter((row) => row.items.length > 0);
-    const sectionRow = populatedRows.find((row) => row.id === sectionId) ?? null;
+    const [navRows, sectionRows] = await Promise.all([
+      queryVisibleNavSections(),
+      queryVisibleSections({ id: sectionId, itemsTake: SECTION_PAGE_ITEMS_TAKE }),
+    ]);
+    const sectionRow = sectionRows[0] ?? null;
+    const section =
+      sectionRow && sectionRow.items.length > 0 ? mapSection(sectionRow) : null;
     return {
-      section: sectionRow ? mapSection(sectionRow) : null,
-      navItems: populatedRows.map((row) => ({ id: row.id, title: row.title })),
+      section,
+      navItems: navRows.map((row) => ({ id: row.id, title: row.title })),
     };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2021") {
@@ -183,9 +206,12 @@ export async function getVisibleCustomStoreSectionPageData(sectionId: string): P
   }
 }
 
+/** Cached per request so metadata + page share one DB round-trip. */
+export const getVisibleCustomStoreSectionPageData = cache(loadVisibleCustomStoreSectionPageData);
+
 export async function getVisibleCustomStoreSectionById(sectionId: string) {
   try {
-    const rows = await queryVisibleSections({ id: sectionId });
+    const rows = await queryVisibleSections({ id: sectionId, itemsTake: SECTION_PAGE_ITEMS_TAKE });
     const section = rows[0] ? mapSection(rows[0]) : null;
     if (!section || section.items.length === 0) return null;
     return section;

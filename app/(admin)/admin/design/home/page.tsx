@@ -28,6 +28,11 @@ type LinkableProductOption = {
   sectionTitle: string;
 };
 
+type LinkableSectionOption = {
+  id: string;
+  title: string;
+};
+
 type ProductComboboxProps = {
   value: string;
   onChange: (value: string) => void;
@@ -142,6 +147,9 @@ export default function AdminHomeHeroDesignPage() {
   const [pendingSlideImageUrl, setPendingSlideImageUrl] = useState<string | null>(null);
   const [selectedLinkedProductId, setSelectedLinkedProductId] = useState("");
   const [slideLinkDrafts, setSlideLinkDrafts] = useState<Record<string, string>>({});
+  const [sideLinkTarget, setSideLinkTarget] = useState<"none" | "section" | "product">("none");
+  const [sideLinkedProductId, setSideLinkedProductId] = useState("");
+  const [sideLinkedSectionId, setSideLinkedSectionId] = useState("");
 
   const { data, isLoading, isError } = useQuery({
     queryKey,
@@ -158,7 +166,11 @@ export default function AdminHomeHeroDesignPage() {
     queryFn: async () => {
       const r = await fetch("/api/admin/home-hero-side-panel");
       if (!r.ok) throw new Error("فشل تحميل صورة البطاقة الجانبية");
-      return r.json() as Promise<{ imageUrl: string | null }>;
+      return r.json() as Promise<{
+        imageUrl: string | null;
+        linkedProductId: string | null;
+        linkedSectionId: string | null;
+      }>;
     },
   });
 
@@ -205,6 +217,42 @@ export default function AdminHomeHeroDesignPage() {
       return options;
     },
   });
+
+  const linkableSectionsQueryKey = ["admin-linkable-custom-store-sections"];
+  const linkableSections = useQuery({
+    queryKey: linkableSectionsQueryKey,
+    queryFn: async () => {
+      const r = await fetch("/api/admin/custom-store-sections");
+      if (!r.ok) throw new Error("فشل تحميل الأقسام القابلة للربط");
+      const data = (await r.json()) as {
+        items: Array<{
+          id: string;
+          title: string;
+          isVisible: boolean;
+          items: Array<{ id: string; isActive: boolean }>;
+        }>;
+      };
+      const options: LinkableSectionOption[] = [];
+      for (const section of data.items ?? []) {
+        if (!section.isVisible) continue;
+        if (!(section.items ?? []).some((item) => item.isActive)) continue;
+        options.push({ id: section.id, title: section.title });
+      }
+      return options;
+    },
+  });
+
+  useEffect(() => {
+    if (!sidePanel.data) return;
+    const productId = sidePanel.data.linkedProductId ?? "";
+    const sectionId = sidePanel.data.linkedSectionId ?? "";
+    setSideLinkedProductId((prev) => (prev === productId ? prev : productId));
+    setSideLinkedSectionId((prev) => (prev === sectionId ? prev : sectionId));
+    setSideLinkTarget((prev) => {
+      const next = productId ? "product" : sectionId ? "section" : "none";
+      return prev === next ? prev : next;
+    });
+  }, [sidePanel.data]);
 
   useEffect(() => {
     if (!branding.data) return;
@@ -361,6 +409,33 @@ export default function AdminHomeHeroDesignPage() {
     }
   };
 
+  const saveSidePanelLink = async () => {
+    setSideUploading(true);
+    try {
+      const payload: { linkedProductId?: string | null; linkedSectionId?: string | null } = {};
+      if (sideLinkTarget === "none") {
+        payload.linkedProductId = null;
+      } else if (sideLinkTarget === "product") {
+        payload.linkedProductId = sideLinkedProductId || null;
+      } else {
+        payload.linkedSectionId = sideLinkedSectionId || null;
+      }
+      const res = await fetch("/api/admin/home-hero-side-panel", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(json.error || "فشل حفظ ربط البطاقة الجانبية");
+      await sidePanel.refetch();
+      toast.success("تم حفظ الربط للبطاقة الجانبية");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "فشل العملية");
+    } finally {
+      setSideUploading(false);
+    }
+  };
+
   const saveBrandingIdentity = async () => {
     setBrandingLoading(true);
     try {
@@ -448,6 +523,22 @@ export default function AdminHomeHeroDesignPage() {
 
   const items = data?.items ?? [];
   const linkableProductOptions = linkableProducts.data ?? [];
+  const linkableSectionOptions = linkableSections.data ?? [];
+
+  const sideCurrentTarget: "none" | "section" | "product" = sidePanel.data?.linkedProductId
+    ? "product"
+    : sidePanel.data?.linkedSectionId
+      ? "section"
+      : "none";
+  const sideCurrentValue =
+    sideCurrentTarget === "product"
+      ? sidePanel.data?.linkedProductId ?? ""
+      : sideCurrentTarget === "section"
+        ? sidePanel.data?.linkedSectionId ?? ""
+        : "";
+  const sideDraftValue =
+    sideLinkTarget === "product" ? sideLinkedProductId : sideLinkTarget === "section" ? sideLinkedSectionId : "";
+  const sideLinkDirty = sideCurrentTarget !== sideLinkTarget || sideCurrentValue !== sideDraftValue;
 
   const brandingLogoFileRef = useRef<HTMLInputElement>(null);
   const brandingTopStripFileRef = useRef<HTMLInputElement>(null);
@@ -825,6 +916,86 @@ export default function AdminHomeHeroDesignPage() {
                 <p className="text-xs leading-relaxed text-zinc-500">
                   هذه الصورة تخص الكارت الجانبي في الصفحة الرئيسية. عند حذفها يختفي الكارت الجانبي ويتمدد السلايدر الكبير تلقائياً.
                 </p>
+                <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-3">
+                  <Label className="text-zinc-300">ربط البطاقة الجانبية</Label>
+                  <p className="mt-1 text-xs text-zinc-500">يمكنك ربطها بقسم أو منتج كما هو متاح في السلايدر الرئيسي.</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant={sideLinkTarget === "none" ? "secondary" : "outline"}
+                      className={sideLinkTarget === "none" ? "border-zinc-600 bg-zinc-800 text-zinc-100" : "border-zinc-700 text-zinc-300"}
+                      onClick={() => setSideLinkTarget("none")}
+                      disabled={sideUploading}
+                    >
+                      بدون ربط
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={sideLinkTarget === "section" ? "secondary" : "outline"}
+                      className={sideLinkTarget === "section" ? "border-zinc-600 bg-zinc-800 text-zinc-100" : "border-zinc-700 text-zinc-300"}
+                      onClick={() => setSideLinkTarget("section")}
+                      disabled={sideUploading}
+                    >
+                      ربط بقسم
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={sideLinkTarget === "product" ? "secondary" : "outline"}
+                      className={sideLinkTarget === "product" ? "border-zinc-600 bg-zinc-800 text-zinc-100" : "border-zinc-700 text-zinc-300"}
+                      onClick={() => setSideLinkTarget("product")}
+                      disabled={sideUploading}
+                    >
+                      ربط بمنتج
+                    </Button>
+                  </div>
+                  {sideLinkTarget === "section" ? (
+                    <div className="mt-3">
+                      <Label className="text-xs text-zinc-400">اختر القسم</Label>
+                      <select
+                        value={sideLinkedSectionId}
+                        onChange={(e) => setSideLinkedSectionId(e.target.value)}
+                        className="mt-1 h-10 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100"
+                        disabled={sideUploading || linkableSections.isLoading}
+                      >
+                        <option value="">اختر قسمًا</option>
+                        {linkableSectionOptions.map((option) => (
+                          <option key={option.id} value={option.id}>
+                            {option.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
+                  {sideLinkTarget === "product" ? (
+                    <div className="mt-3">
+                      <Label className="text-xs text-zinc-400">اختر المنتج</Label>
+                      <ProductCombobox
+                        className="mt-1"
+                        value={sideLinkedProductId}
+                        onChange={setSideLinkedProductId}
+                        options={linkableProductOptions}
+                        placeholder="اختر منتجًا للربط"
+                        disabled={sideUploading || linkableProducts.isLoading}
+                      />
+                    </div>
+                  ) : null}
+                  <div className="mt-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="border-zinc-600 text-zinc-200"
+                      onClick={saveSidePanelLink}
+                      disabled={
+                        sideUploading ||
+                        !sideLinkDirty ||
+                        (sideLinkTarget === "section" && !sideLinkedSectionId) ||
+                        (sideLinkTarget === "product" && !sideLinkedProductId)
+                      }
+                    >
+                      حفظ ربط البطاقة الجانبية
+                    </Button>
+                  </div>
+                </div>
                 <input ref={sideFileRef} type="file" accept="image/*" className="hidden" onChange={onPickSideFile} />
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
