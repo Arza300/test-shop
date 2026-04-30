@@ -53,6 +53,16 @@ Then **Redeploy** the latest deployment (or push a commit) so serverless functio
 
 Sanity check: `GET /api/auth/providers` should return **200 JSON** once `NEXTAUTH_SECRET` (or `AUTH_SECRET`) is set; until then NextAuth responds with configuration errors.
 
+### Application error white page (“Digest”) on Vercel
+
+`NEXTAUTH_URL` fixes the **canonical URL** NextAuth uses; it **does not** prevent unrelated server crashes. Next.js hides the stack trace behind a **Digest** (for example Digest `732991`).
+
+Do this:
+
+1. **Runtime logs**: Vercel → your deployment → **Functions** / **Runtime Logs**. Search by the digest or by the timestamp when you reproduced the issue. Typical causes once auth env is partly set: unset `DATABASE_URL` / bad Neon URL, unset `DIRECT_URL` (Prisma still needs it when defined in the datasource), runtime Prisma errors, or crashes in a Server Component.
+2. **`GET /api/health/db`**: Returns JSON `{ ok: true, … }` when Prisma connects. It also echoes **boolean-only** env flags (`env.DATABASE_URL`, `NEXTAUTH_OR_AUTH_SECRET`, etc.) — no secret values — so you can confirm what the server resolved without opening the homepage.
+3. **Redeploy** after changing Environment Variables — values are injected at deployment time.
+
 ## R2 (optional)
 
 If `R2_*` variables are set, admin “New/Edit product” can upload files via `POST /api/upload`. Otherwise use image URLs like `/placeholder.svg` or a full HTTPS URL to your R2 public domain.
