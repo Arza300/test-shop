@@ -1,11 +1,12 @@
 "use client";
 
+import { Suspense } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema } from "@/lib/validations/auth";
 import { z } from "zod";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,8 +16,10 @@ import { toast } from "sonner";
 
 type Form = z.infer<typeof registerSchema>;
 
-export default function SignUpPage() {
+function SignUpForm() {
   const router = useRouter();
+  const search = useSearchParams();
+  const callbackAfterAuth = search.get("callbackUrl") ?? "/";
   const form = useForm<Form>({
     resolver: zodResolver(registerSchema),
     defaultValues: { name: "", email: "", password: "" },
@@ -46,10 +49,10 @@ export default function SignUpPage() {
               const res = await signIn("credentials", { email: values.email, password: values.password, redirect: false });
               if (res?.error) {
                 toast.success("تم إنشاء الحساب. سجّل الدخول.");
-                router.push("/auth/sign-in");
+                router.push(`/auth/sign-in?callbackUrl=${encodeURIComponent(callbackAfterAuth)}`);
                 return;
               }
-              router.push("/");
+              router.push(callbackAfterAuth);
             })}
           >
             <div>
@@ -69,7 +72,10 @@ export default function SignUpPage() {
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               لديك حساب بالفعل؟{" "}
-              <Link className="text-primary underline" href="/auth/sign-in">
+              <Link
+                className="text-primary underline"
+                href={`/auth/sign-in?callbackUrl=${encodeURIComponent(callbackAfterAuth)}`}
+              >
                 تسجيل الدخول
               </Link>
             </p>
@@ -77,5 +83,27 @@ export default function SignUpPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function Fallback() {
+  return (
+    <div className="mx-auto w-full max-w-md">
+      <Card>
+        <CardHeader>
+          <CardTitle>إنشاء حساب</CardTitle>
+          <CardDescription>أنشئ حسابك للشراء والمتابعة بسهولة.</CardDescription>
+        </CardHeader>
+        <CardContent className="h-48 animate-pulse rounded-md bg-muted" />
+      </Card>
+    </div>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={<Fallback />}>
+      <SignUpForm />
+    </Suspense>
   );
 }

@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { shouldUnoptimizeImageSrc } from "@/lib/image-url";
 import { SearchCat } from "@/components/shop/search-cat";
 import { useCartStore } from "@/lib/cart-store";
+import { useRequireAuthForShopping } from "@/lib/use-require-auth-shopping";
 import { toast } from "sonner";
 
 type ProductListItem = {
@@ -71,6 +72,7 @@ export function ShopContent() {
   const [qInput, setQInput] = useState(sp.get("q") ?? "");
   const [catAwake, setCatAwake] = useState(false);
   const addToCart = useCartStore((s) => s.add);
+  const { ensureSignedIn, authLoading } = useRequireAuthForShopping();
 
   useEffect(() => {
     setQInput(sp.get("q") ?? "");
@@ -239,8 +241,9 @@ export function ShopContent() {
                   </Button>
                   <Button
                     size="sm"
-                    disabled={p.stock < 1}
+                    disabled={p.stock < 1 || authLoading}
                     onClick={() => {
+                      if (!ensureSignedIn()) return;
                       addToCart({
                         itemType: p.itemType,
                         itemId: p.id,

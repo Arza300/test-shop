@@ -52,7 +52,10 @@ export function SignInForm() {
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               ليس لديك حساب؟{" "}
-              <Link className="text-primary underline" href="/auth/sign-up">
+              <Link
+                className="text-primary underline"
+                href={`/auth/sign-up?callbackUrl=${encodeURIComponent(callback)}`}
+              >
                 إنشاء حساب
               </Link>
             </p>

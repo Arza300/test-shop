@@ -18,7 +18,7 @@ export default function CartPage() {
       {items.length === 0 ? (
         <p className="text-muted-foreground">
           السلة فارغة.{" "}
-          <Link className="text-primary underline" href="/shop">
+          <Link className="text-primary underline" href="/">
             تصفّح المتجر
           </Link>
           .

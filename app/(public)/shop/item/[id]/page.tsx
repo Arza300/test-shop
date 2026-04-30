@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { useCartStore } from "@/lib/cart-store";
+import { useRequireAuthForShopping } from "@/lib/use-require-auth-shopping";
 import { shouldUnoptimizeImageSrc } from "@/lib/image-url";
 import { toast } from "sonner";
 
@@ -39,6 +40,7 @@ export default function CustomStoreItemPage() {
   const router = useRouter();
   const id = params.id as string;
   const add = useCartStore((s) => s.add);
+  const { ensureSignedIn, authLoading } = useRequireAuthForShopping();
   const [selectedVariantIndex, setSelectedVariantIndex] = useState<number>(-1);
 
   const { data, isLoading, isError } = useQuery({
@@ -197,8 +199,9 @@ export default function CustomStoreItemPage() {
           <div className="flex flex-wrap gap-3">
             <Button
               size="lg"
-              disabled={!canPurchase}
+              disabled={!canPurchase || authLoading}
               onClick={() => {
+                if (!ensureSignedIn()) return;
                 if (data.hasVariants && !selectedVariant) {
                   toast.error("اختر النوع أولاً قبل الإضافة للسلة");
                   return;
@@ -212,8 +215,9 @@ export default function CustomStoreItemPage() {
             <Button
               size="lg"
               variant="secondary"
-              disabled={!canPurchase}
+              disabled={!canPurchase || authLoading}
               onClick={() => {
+                if (!ensureSignedIn("/cart")) return;
                 if (data.hasVariants && !selectedVariant) {
                   toast.error("اختر النوع أولاً قبل الشراء");
                   return;
