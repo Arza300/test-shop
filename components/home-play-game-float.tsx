@@ -37,7 +37,7 @@ export function HomePlayGameFloat() {
 
   return (
     <aside
-      className="pointer-events-none fixed bottom-8 left-6 z-50 pb-[env(safe-area-inset-bottom,0)] pl-[env(safe-area-inset-left,0)] sm:bottom-10 sm:left-8"
+      className="pointer-events-none fixed bottom-8 left-6 z-50 hidden pb-[env(safe-area-inset-bottom,0)] pl-[env(safe-area-inset-left,0)] sm:bottom-10 sm:left-8 lg:block"
       aria-label="العب الآن — افتح اللعبة من الأيقونة"
     >
       {/*
