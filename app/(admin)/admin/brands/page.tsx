@@ -17,6 +17,8 @@ type BrandRow = {
   isVisible: boolean;
   position: number;
   productCount: number;
+  linkedSectionId: string | null;
+  linkedSectionTitle: string | null;
 };
 
 export default function AdminBrandsPage() {
@@ -79,6 +81,7 @@ export default function AdminBrandsPage() {
             <TableHead>الاسم</TableHead>
             <TableHead>المسار</TableHead>
             <TableHead>المنتجات</TableHead>
+            <TableHead>قسم المتجر</TableHead>
             <TableHead>الترتيب</TableHead>
             <TableHead />
           </TableRow>
@@ -112,6 +115,9 @@ export default function AdminBrandsPage() {
                 {item.slug}
               </TableCell>
               <TableCell>{item.productCount}</TableCell>
+              <TableCell className="max-w-[200px] truncate text-muted-foreground" title={item.linkedSectionTitle ?? ""}>
+                {item.linkedSectionTitle ?? "—"}
+              </TableCell>
               <TableCell>{item.position}</TableCell>
               <TableCell>
                 <Button asChild size="sm" variant="secondary">
@@ -122,7 +128,7 @@ export default function AdminBrandsPage() {
           ))}
           {(data?.items?.length ?? 0) === 0 && !data?.needsMigration ? (
             <TableRow>
-              <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
+              <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
                 لا توجد علامات بعد. اضغط «إضافة علامة» للبدء.
               </TableCell>
             </TableRow>

@@ -22,7 +22,12 @@ type BrandDetail = {
   logoUrl: string;
   isVisible: boolean;
   position: number;
+  linkedSectionId: string | null;
 };
+
+const NO_SECTION_VALUE = "__none__";
+
+type SectionOption = { id: string; title: string };
 
 export function BrandDelete({ id }: { id: string }) {
   const router = useRouter();
@@ -73,6 +78,19 @@ export function BrandForm({
   const router = useRouter();
   const [fileUploading, setFileUploading] = useState(false);
 
+  const { data: sectionsPayload, isLoading: sectionsLoading } = useQuery({
+    queryKey: ["admin-custom-sections", "brand-form"],
+    queryFn: async () => {
+      const r = await fetch("/api/admin/custom-store-sections");
+      if (!r.ok) return { items: [] as SectionOption[] };
+      const j = (await r.json()) as { items?: Array<{ id: string; title: string }> };
+      return {
+        items: (j.items ?? []).map((s) => ({ id: s.id, title: s.title })),
+      };
+    },
+  });
+  const sectionOptions = sectionsPayload?.items ?? [];
+
   const {
     data: brandRow,
     isLoading: brandLoading,
@@ -95,6 +113,7 @@ export function BrandForm({
       logoUrl: initial?.logoUrl ?? "/placeholder.svg",
       isVisible: initial?.isVisible ?? true,
       position: initial?.position ?? 0,
+      linkedSectionId: initial?.linkedSectionId ?? null,
     },
   });
 
@@ -106,6 +125,7 @@ export function BrandForm({
       logoUrl: brandRow.logoUrl,
       isVisible: brandRow.isVisible,
       position: brandRow.position,
+      linkedSectionId: brandRow.linkedSectionId ?? null,
     });
   }, [brandRow, form]);
 
@@ -181,6 +201,31 @@ export function BrandForm({
               <SelectItem value="no">مخفي</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+        <div className="sm:col-span-2">
+          <Label>القسم المرتبط (يفتح عند النقر على الشعار في الصفحة الرئيسية)</Label>
+          {sectionsLoading ? (
+            <Skeleton className="mt-1 h-10 w-full" />
+          ) : (
+            <Select
+              value={form.watch("linkedSectionId") ?? NO_SECTION_VALUE}
+              onValueChange={(v) =>
+                form.setValue("linkedSectionId", v === NO_SECTION_VALUE ? null : v, { shouldDirty: true })
+              }
+            >
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="اختر قسماً" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_SECTION_VALUE}>بدون قسم (كل المنتجات)</SelectItem>
+                {sectionOptions.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
         <div className="sm:col-span-2">
           <Label>رابط شعار اللوجو</Label>

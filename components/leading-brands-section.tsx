@@ -7,6 +7,7 @@ export type LeadingBrandTile = {
   slug: string;
   name: string;
   logoUrl: string;
+  linkedSectionId: string | null;
 };
 
 const TITLE = "العلامات التجارية الرائدة";
@@ -32,7 +33,7 @@ export function LeadingBrandsSection({ brands, className }: Props) {
           {brands.map((b) => (
             <Link
               key={b.slug}
-              href="/shop/section/all"
+              href={b.linkedSectionId ? `/shop/section/${b.linkedSectionId}` : "/shop/section/all"}
               className="group flex aspect-[5/3] items-center justify-center rounded-2xl border border-white/5 bg-slate-900/80 p-4 transition-colors hover:border-primary/25 hover:bg-slate-800/90"
             >
               <div className="relative h-full w-full max-h-[72px] min-h-[40px] max-w-[160px]">

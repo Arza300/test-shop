@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/api-auth";
 import { brandCreateSchema } from "@/lib/validations/brand";
+import { assertValidBrandLinkedSectionId } from "@/lib/brand-linked-section";
 import { resolveImageUrlForClient } from "@/lib/image-url";
 
 function isMissingTableError(error: unknown): boolean {
@@ -19,6 +20,10 @@ export async function GET() {
     const items = await prisma.brand.findMany({
       orderBy: [{ position: "asc" }, { createdAt: "desc" }],
       take: 500,
+      include: {
+        linkedSection: { select: { id: true, title: true } },
+        _count: { select: { products: true } },
+      },
     });
     return NextResponse.json({
       items: items.map((b) => ({
@@ -28,6 +33,9 @@ export async function GET() {
         logoUrl: resolveImageUrlForClient(b.logoUrl) ?? b.logoUrl,
         isVisible: b.isVisible,
         position: b.position,
+        linkedSectionId: b.linkedSectionId,
+        linkedSectionTitle: b.linkedSection?.title ?? null,
+        productCount: b._count.products,
       })),
     });
   } catch (e) {
@@ -54,6 +62,11 @@ export async function POST(req: Request) {
 
   const data = parsed.data;
 
+  const sectionCheck = await assertValidBrandLinkedSectionId(data.linkedSectionId ?? undefined);
+  if (!sectionCheck.ok) {
+    return NextResponse.json({ error: sectionCheck.message }, { status: 400 });
+  }
+
   try {
     const agg = await prisma.brand.aggregate({ _max: { position: true } });
     const position = data.position ?? (agg._max.position ?? -1) + 1;
@@ -66,6 +79,7 @@ export async function POST(req: Request) {
           logoUrl: data.logoUrl.trim(),
           isVisible: data.isVisible,
           position,
+          linkedSectionId: data.linkedSectionId ?? null,
         },
       });
       return b;

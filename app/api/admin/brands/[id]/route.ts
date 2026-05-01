@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/api-auth";
 import { brandPatchSchema } from "@/lib/validations/brand";
+import { assertValidBrandLinkedSectionId } from "@/lib/brand-linked-section";
 import { resolveImageUrlForClient } from "@/lib/image-url";
 
 function isMissingTableError(error: unknown): boolean {
@@ -18,6 +19,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   try {
     const row = await prisma.brand.findUnique({
       where: { id: params.id },
+      include: { linkedSection: { select: { id: true, title: true } } },
     });
     if (!row) return NextResponse.json({ error: "غير موجود" }, { status: 404 });
 
@@ -28,6 +30,8 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
       logoUrl: resolveImageUrlForClient(row.logoUrl) ?? row.logoUrl,
       isVisible: row.isVisible,
       position: row.position,
+      linkedSectionId: row.linkedSectionId,
+      linkedSectionTitle: row.linkedSection?.title ?? null,
     });
   } catch (e) {
     if (isMissingTableError(e)) {
@@ -49,6 +53,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const data = parsed.data;
 
+  const sectionCheck = await assertValidBrandLinkedSectionId(
+    data.linkedSectionId === undefined ? undefined : data.linkedSectionId
+  );
+  if (!sectionCheck.ok) {
+    return NextResponse.json({ error: sectionCheck.message }, { status: 400 });
+  }
+
   try {
     const existing = await prisma.brand.findUnique({ where: { id: params.id } });
     if (!existing) return NextResponse.json({ error: "غير موجود" }, { status: 404 });
@@ -61,6 +72,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       if (rest.logoUrl !== undefined) updateData.logoUrl = rest.logoUrl.trim();
       if (rest.isVisible !== undefined) updateData.isVisible = rest.isVisible;
       if (rest.position !== undefined) updateData.position = rest.position;
+      if (rest.linkedSectionId !== undefined) {
+        updateData.linkedSection =
+          rest.linkedSectionId === null
+            ? { disconnect: true }
+            : { connect: { id: rest.linkedSectionId } };
+      }
 
       if (Object.keys(updateData).length > 0) {
         await tx.brand.update({

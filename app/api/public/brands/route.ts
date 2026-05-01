@@ -20,6 +20,7 @@ export async function GET() {
         name: true,
         slug: true,
         logoUrl: true,
+        linkedSectionId: true,
       },
     });
     return NextResponse.json({

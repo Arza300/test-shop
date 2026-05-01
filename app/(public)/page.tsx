@@ -27,12 +27,13 @@ async function getVisibleBrands() {
       where: { isVisible: true },
       orderBy: [{ position: "asc" }, { createdAt: "desc" }],
       take: 48,
-      select: { name: true, slug: true, logoUrl: true },
+      select: { name: true, slug: true, logoUrl: true, linkedSectionId: true },
     });
     return rows.map((r) => ({
       name: r.name,
       slug: r.slug,
       logoUrl: resolveImageUrlForClient(r.logoUrl) ?? r.logoUrl,
+      linkedSectionId: r.linkedSectionId,
     }));
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2021") {
