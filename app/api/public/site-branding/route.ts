@@ -19,5 +19,6 @@ export async function GET() {
     supportPhone: row?.supportPhone ?? null,
     bb8WelcomeText: row?.bb8WelcomeText ?? null,
     brandPrimaryHex: row?.brandPrimaryHex ?? null,
+    homePlayGameFloatVisible: Boolean(row?.homePlayGameFloatVisible),
   });
 }

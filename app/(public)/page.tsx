@@ -1,4 +1,5 @@
 import { HomeSocialFloat } from "@/components/home-social-float";
+import { HomePlayGameFloat } from "@/components/home-play-game-float";
 import { HomeHeroSection, type HomeHeroSlideVisual } from "@/components/home-hero-section";
 import { Bb8DroidSection } from "@/components/bb8-droid-section";
 import { LeadingBrandsSection } from "@/components/leading-brands-section";
@@ -61,7 +62,7 @@ async function getSiteBrandingSocialLinks() {
   try {
     return await prisma.siteBrandingSetting.findUnique({
       where: { id: "main" },
-      select: { facebookUrl: true, whatsappUrl: true },
+      select: { facebookUrl: true, whatsappUrl: true, homePlayGameFloatVisible: true },
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2021") {
@@ -116,6 +117,7 @@ export default async function HomePage() {
         facebookUrl={siteBrandingSocial?.facebookUrl}
         whatsappUrl={siteBrandingSocial?.whatsappUrl}
       />
+      {siteBrandingSocial?.homePlayGameFloatVisible ? <HomePlayGameFloat /> : null}
       <HomeHeroSection
         slides={slides}
         sidePanelImageUrl={

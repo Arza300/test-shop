@@ -153,6 +153,8 @@ export default function AdminHomeHeroDesignPage() {
   const [brandPrimaryHexDraft, setBrandPrimaryHexDraft] = useState("");
   const [brandColorSaving, setBrandColorSaving] = useState(false);
   const [brandingLoading, setBrandingLoading] = useState(false);
+  const [homePlayGameFloatDraft, setHomePlayGameFloatDraft] = useState(false);
+  const [playGameFloatSaving, setPlayGameFloatSaving] = useState(false);
   const [pendingSlideImageUrl, setPendingSlideImageUrl] = useState<string | null>(null);
   const [selectedLinkedProductId, setSelectedLinkedProductId] = useState("");
   const [slideLinkDrafts, setSlideLinkDrafts] = useState<Record<string, string>>({});
@@ -198,6 +200,7 @@ export default function AdminHomeHeroDesignPage() {
         supportPhone: string | null;
         bb8WelcomeText: string | null;
         brandPrimaryHex: string | null;
+        homePlayGameFloatVisible: boolean;
       }>;
     },
   });
@@ -282,6 +285,7 @@ export default function AdminHomeHeroDesignPage() {
     const nextPhone = branding.data.supportPhone ?? "";
     const nextBb8 = branding.data.bb8WelcomeText ?? "";
     const nextBrandHex = branding.data.brandPrimaryHex ?? "";
+    const nextPlayGameFloat = Boolean(branding.data.homePlayGameFloatVisible);
     setBrandingName((prev) => (prev === nextName ? prev : nextName));
     setBrandingLogoUrl((prev) => (prev === nextLogo ? prev : nextLogo));
     setBrandingTopStripImageUrl((prev) => (prev === nextTopStrip ? prev : nextTopStrip));
@@ -290,6 +294,7 @@ export default function AdminHomeHeroDesignPage() {
     setSupportPhoneDraft((prev) => (prev === nextPhone ? prev : nextPhone));
     setBb8WelcomeDraft((prev) => (prev === nextBb8 ? prev : nextBb8));
     setBrandPrimaryHexDraft((prev) => (prev === nextBrandHex ? prev : nextBrandHex));
+    setHomePlayGameFloatDraft((prev) => (prev === nextPlayGameFloat ? prev : nextPlayGameFloat));
   }, [branding.data]);
 
   const addMut = useMutation({
@@ -507,6 +512,25 @@ export default function AdminHomeHeroDesignPage() {
     }
   };
 
+  const savePlayGameFloatVisibility = async () => {
+    setPlayGameFloatSaving(true);
+    try {
+      const r = await fetch("/api/admin/site-branding", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ homePlayGameFloatVisible: homePlayGameFloatDraft }),
+      });
+      const j = (await r.json().catch(() => ({}))) as { error?: string };
+      if (!r.ok) throw new Error(j.error || "فشل حفظ إعداد اللعبة");
+      await branding.refetch();
+      toast.success("تم حفظ ظهور أيقونة اللعبة");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "فشل العملية");
+    } finally {
+      setPlayGameFloatSaving(false);
+    }
+  };
+
   const saveSocialLinks = async () => {
     setSocialLinksSaving(true);
     try {
@@ -661,6 +685,8 @@ export default function AdminHomeHeroDesignPage() {
   const storedWa = (branding.data?.whatsappUrl ?? "").trim();
   const socialLinksDirty =
     storedFb !== socialFacebookUrl.trim() || storedWa !== socialWhatsappUrl.trim();
+  const storedPlayGameFloat = Boolean(branding.data?.homePlayGameFloatVisible);
+  const playGameFloatDirty = storedPlayGameFloat !== homePlayGameFloatDraft;
   const storedSupportPhone = (branding.data?.supportPhone ?? "").trim();
   const storedBb8Welcome = (branding.data?.bb8WelcomeText ?? "").trim();
   const phoneBb8Dirty =
@@ -843,6 +869,40 @@ export default function AdminHomeHeroDesignPage() {
               </div>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-zinc-800 bg-zinc-900/70">
+        <CardHeader>
+          <CardTitle className="text-zinc-100">أيقونة اللعبة «العب الآن»</CardTitle>
+          <CardDescription className="text-zinc-500">
+            عند التفعيل تظهر أيقونة ثابتة أسفل يسار الصفحة الرئيسية مع سهم ونص «العب الآن»؛ النقر يفتح اللعبة في
+            تبويب جديد.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <input
+              id="admin-home-play-game-float"
+              type="checkbox"
+              className="h-4 w-4 shrink-0 rounded border border-zinc-600 bg-zinc-950 text-cyan-600 focus-visible:ring-2 focus-visible:ring-cyan-500/40"
+              checked={homePlayGameFloatDraft}
+              onChange={(e) => setHomePlayGameFloatDraft(e.target.checked)}
+              disabled={playGameFloatSaving || branding.isLoading}
+            />
+            <Label htmlFor="admin-home-play-game-float" className="cursor-pointer text-zinc-200">
+              إظهار عنصر اللعبة العائم على الصفحة الرئيسية
+            </Label>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            className="bg-cyan-700/90 text-white hover:bg-cyan-700 disabled:opacity-50"
+            disabled={!playGameFloatDirty || playGameFloatSaving || branding.isLoading}
+            onClick={savePlayGameFloatVisibility}
+          >
+            {playGameFloatSaving ? "جاري الحفظ…" : "حفظ إعداد اللعبة"}
+          </Button>
         </CardContent>
       </Card>
 

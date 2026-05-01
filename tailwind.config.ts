@@ -81,10 +81,17 @@ const config: Config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        /** عنصر «العب الآن» العائم — ظهور من اليسار */
+        "play-game-float-enter": {
+          from: { opacity: "0", transform: "translateX(-1.75rem)" },
+          to: { opacity: "1", transform: "translateX(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "play-game-float-enter":
+          "play-game-float-enter 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.5s both",
       },
     },
   },

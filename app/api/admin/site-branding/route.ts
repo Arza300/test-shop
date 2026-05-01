@@ -23,6 +23,7 @@ export async function GET() {
     supportPhone: row?.supportPhone ?? null,
     bb8WelcomeText: row?.bb8WelcomeText ?? null,
     brandPrimaryHex: row?.brandPrimaryHex ?? null,
+    homePlayGameFloatVisible: Boolean(row?.homePlayGameFloatVisible),
   });
 }
 
@@ -50,6 +51,10 @@ export async function PUT(req: NextRequest) {
   const hasSupportPhone = Object.prototype.hasOwnProperty.call(payload, "supportPhone");
   const hasBb8WelcomeText = Object.prototype.hasOwnProperty.call(payload, "bb8WelcomeText");
   const hasBrandPrimaryHex = Object.prototype.hasOwnProperty.call(payload, "brandPrimaryHex");
+  const hasHomePlayGameFloatVisible = Object.prototype.hasOwnProperty.call(
+    payload,
+    "homePlayGameFloatVisible"
+  );
 
   const updateData: {
     name?: string | null;
@@ -60,6 +65,7 @@ export async function PUT(req: NextRequest) {
     supportPhone?: string | null;
     bb8WelcomeText?: string | null;
     brandPrimaryHex?: string | null;
+    homePlayGameFloatVisible?: boolean;
   } = {};
   const createData: {
     id: string;
@@ -71,6 +77,7 @@ export async function PUT(req: NextRequest) {
     supportPhone?: string | null;
     bb8WelcomeText?: string | null;
     brandPrimaryHex?: string | null;
+    homePlayGameFloatVisible?: boolean;
   } = {
     id: BRAND_ID,
   };
@@ -133,6 +140,16 @@ export async function PUT(req: NextRequest) {
       createData.brandPrimaryHex = hex;
     }
   }
+  if (hasHomePlayGameFloatVisible) {
+    if (typeof payload.homePlayGameFloatVisible !== "boolean") {
+      return NextResponse.json(
+        { error: "حقل إظهار أيقونة اللعبة يجب أن يكون true أو false" },
+        { status: 400 }
+      );
+    }
+    updateData.homePlayGameFloatVisible = payload.homePlayGameFloatVisible;
+    createData.homePlayGameFloatVisible = payload.homePlayGameFloatVisible;
+  }
 
   if (
     !hasName &&
@@ -142,7 +159,8 @@ export async function PUT(req: NextRequest) {
     !hasWhatsappUrl &&
     !hasSupportPhone &&
     !hasBb8WelcomeText &&
-    !hasBrandPrimaryHex
+    !hasBrandPrimaryHex &&
+    !hasHomePlayGameFloatVisible
   ) {
     return NextResponse.json({ error: "لا توجد بيانات للتحديث" }, { status: 400 });
   }
@@ -163,6 +181,7 @@ export async function PUT(req: NextRequest) {
       supportPhone: row.supportPhone ?? null,
       bb8WelcomeText: row.bb8WelcomeText ?? null,
       brandPrimaryHex: row.brandPrimaryHex ?? null,
+      homePlayGameFloatVisible: Boolean(row.homePlayGameFloatVisible),
     });
   } catch (e) {
     console.error("[site-branding PUT]", e);

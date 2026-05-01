@@ -238,6 +238,8 @@ model SiteBrandingSetting {
   bb8WelcomeText String?
   /// لون تمييز الواجهة (أزرار، روابط، شارات) بتنسيق #RRGGBB
   brandPrimaryHex String?
+  /// إظهار أيقونة «العب الآن» العائمة أسفل يسار الصفحة الرئيسية
+  homePlayGameFloatVisible Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
