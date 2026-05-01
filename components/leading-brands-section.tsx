@@ -33,7 +33,7 @@ export function LeadingBrandsSection({ brands, className }: Props) {
             <Link
               key={b.slug}
               href="/shop/section/all"
-              className="group flex aspect-[5/3] items-center justify-center rounded-2xl border border-white/5 bg-slate-900/80 p-4 transition-colors hover:border-cyan-500/25 hover:bg-slate-800/90"
+              className="group flex aspect-[5/3] items-center justify-center rounded-2xl border border-white/5 bg-slate-900/80 p-4 transition-colors hover:border-primary/25 hover:bg-slate-800/90"
             >
               <div className="relative h-full w-full max-h-[72px] min-h-[40px] max-w-[160px]">
                 <Image

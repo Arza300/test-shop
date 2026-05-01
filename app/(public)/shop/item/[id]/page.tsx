@@ -173,8 +173,8 @@ export default function CustomStoreItemPage() {
                       type="button"
                       className={`rounded-lg border px-3 py-2 text-right transition ${
                         isSelected
-                          ? "border-cyan-500 bg-cyan-500/10 text-cyan-100"
-                          : "border-border/70 bg-card/30 text-foreground hover:border-cyan-500/50"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border/70 bg-card/30 text-foreground hover:border-primary/50"
                       }`}
                       onClick={() => setSelectedVariantIndex(idx)}
                     >

@@ -27,6 +27,24 @@ export function Bb8DroidSection() {
   const animRef = useRef<number | null>(null);
   const [movingRight, setMovingRight] = useState(false);
   const [scrollHintVisible, setScrollHintVisible] = useState(true);
+  const [welcomeText, setWelcomeText] = useState("");
+
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/public/site-branding")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { bb8WelcomeText?: string | null } | null) => {
+        if (!alive) return;
+        setWelcomeText(d?.bb8WelcomeText?.trim() ?? "");
+      })
+      .catch(() => {
+        if (!alive) return;
+        setWelcomeText("");
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     const onScroll = () => {
@@ -139,7 +157,7 @@ export function Bb8DroidSection() {
         <div className="bb8-shell">
           <div ref={innerRef} className="bb8-inner">
             <div className="sand" />
-            <p className="welcome-text">وجودك بداية سعادتك</p>
+            {welcomeText ? <p className="welcome-text">{welcomeText}</p> : null}
             <div ref={bb8Ref} className="bb8" style={{ left: `${dPosRef.current}px` }}>
               <div className={`antennas ${movingRight ? "right" : ""}`}>
                 <div className="antenna short" />
@@ -261,7 +279,8 @@ export function Bb8DroidSection() {
           line-height: 1.1;
           letter-spacing: 0.01em;
           text-align: center;
-          white-space: nowrap;
+          white-space: normal;
+          max-width: min(92vw, 42rem);
           pointer-events: none;
           z-index: 1;
           text-shadow: 0 6px 30px rgba(0, 0, 0, 0.35);

@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
+import { BRAND_PRIMARY_HEX_PREVIEW_FALLBACK, parseBrandPrimaryHex } from "@/lib/brand-primary-theme";
 import { resolveImageUrlForClient, shouldUnoptimizeImageSrc } from "@/lib/image-url";
 
 type SlideRow = {
@@ -143,6 +144,14 @@ export default function AdminHomeHeroDesignPage() {
   const [brandingName, setBrandingName] = useState("");
   const [brandingLogoUrl, setBrandingLogoUrl] = useState<string | null>(null);
   const [brandingTopStripImageUrl, setBrandingTopStripImageUrl] = useState<string | null>(null);
+  const [socialFacebookUrl, setSocialFacebookUrl] = useState("");
+  const [socialWhatsappUrl, setSocialWhatsappUrl] = useState("");
+  const [socialLinksSaving, setSocialLinksSaving] = useState(false);
+  const [supportPhoneDraft, setSupportPhoneDraft] = useState("");
+  const [bb8WelcomeDraft, setBb8WelcomeDraft] = useState("");
+  const [phoneBb8Saving, setPhoneBb8Saving] = useState(false);
+  const [brandPrimaryHexDraft, setBrandPrimaryHexDraft] = useState("");
+  const [brandColorSaving, setBrandColorSaving] = useState(false);
   const [brandingLoading, setBrandingLoading] = useState(false);
   const [pendingSlideImageUrl, setPendingSlideImageUrl] = useState<string | null>(null);
   const [selectedLinkedProductId, setSelectedLinkedProductId] = useState("");
@@ -180,7 +189,16 @@ export default function AdminHomeHeroDesignPage() {
     queryFn: async () => {
       const r = await fetch("/api/admin/site-branding");
       if (!r.ok) throw new Error("فشل تحميل بيانات اسم الموقع واللوجو");
-      return r.json() as Promise<{ name: string | null; logoUrl: string | null; topStripImageUrl: string | null }>;
+      return r.json() as Promise<{
+        name: string | null;
+        logoUrl: string | null;
+        topStripImageUrl: string | null;
+        facebookUrl: string | null;
+        whatsappUrl: string | null;
+        supportPhone: string | null;
+        bb8WelcomeText: string | null;
+        brandPrimaryHex: string | null;
+      }>;
     },
   });
 
@@ -259,9 +277,19 @@ export default function AdminHomeHeroDesignPage() {
     const nextName = branding.data.name ?? "";
     const nextLogo = branding.data.logoUrl ?? null;
     const nextTopStrip = branding.data.topStripImageUrl ?? null;
+    const nextFb = branding.data.facebookUrl ?? "";
+    const nextWa = branding.data.whatsappUrl ?? "";
+    const nextPhone = branding.data.supportPhone ?? "";
+    const nextBb8 = branding.data.bb8WelcomeText ?? "";
+    const nextBrandHex = branding.data.brandPrimaryHex ?? "";
     setBrandingName((prev) => (prev === nextName ? prev : nextName));
     setBrandingLogoUrl((prev) => (prev === nextLogo ? prev : nextLogo));
     setBrandingTopStripImageUrl((prev) => (prev === nextTopStrip ? prev : nextTopStrip));
+    setSocialFacebookUrl((prev) => (prev === nextFb ? prev : nextFb));
+    setSocialWhatsappUrl((prev) => (prev === nextWa ? prev : nextWa));
+    setSupportPhoneDraft((prev) => (prev === nextPhone ? prev : nextPhone));
+    setBb8WelcomeDraft((prev) => (prev === nextBb8 ? prev : nextBb8));
+    setBrandPrimaryHexDraft((prev) => (prev === nextBrandHex ? prev : nextBrandHex));
   }, [branding.data]);
 
   const addMut = useMutation({
@@ -479,6 +507,89 @@ export default function AdminHomeHeroDesignPage() {
     }
   };
 
+  const saveSocialLinks = async () => {
+    setSocialLinksSaving(true);
+    try {
+      const r = await fetch("/api/admin/site-branding", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          facebookUrl: socialFacebookUrl.trim(),
+          whatsappUrl: socialWhatsappUrl.trim(),
+        }),
+      });
+      const j = (await r.json().catch(() => ({}))) as { error?: string };
+      if (!r.ok) throw new Error(j.error || "فشل حفظ الروابط");
+      await branding.refetch();
+      toast.success("تم حفظ روابط التواصل");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "فشل العملية");
+    } finally {
+      setSocialLinksSaving(false);
+    }
+  };
+
+  const savePhoneAndBb8 = async () => {
+    setPhoneBb8Saving(true);
+    try {
+      const r = await fetch("/api/admin/site-branding", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          supportPhone: supportPhoneDraft.trim(),
+          bb8WelcomeText: bb8WelcomeDraft.trim(),
+        }),
+      });
+      const j = (await r.json().catch(() => ({}))) as { error?: string };
+      if (!r.ok) throw new Error(j.error || "فشل حفظ الإعدادات");
+      await branding.refetch();
+      toast.success("تم حفظ رقم الهاتف ونص الروبوت");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "فشل العملية");
+    } finally {
+      setPhoneBb8Saving(false);
+    }
+  };
+
+  const saveBrandPrimaryColor = async () => {
+    setBrandColorSaving(true);
+    try {
+      const r = await fetch("/api/admin/site-branding", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brandPrimaryHex: brandPrimaryHexDraft.trim() }),
+      });
+      const j = (await r.json().catch(() => ({}))) as { error?: string };
+      if (!r.ok) throw new Error(j.error || "فشل حفظ اللون");
+      await branding.refetch();
+      toast.success("تم حفظ لون التمييز — حدّث الصفحات أو افتح المتجر من جديد لرؤية التغيير");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "فشل العملية");
+    } finally {
+      setBrandColorSaving(false);
+    }
+  };
+
+  const clearBrandPrimaryColor = async () => {
+    setBrandColorSaving(true);
+    try {
+      const r = await fetch("/api/admin/site-branding", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brandPrimaryHex: "" }),
+      });
+      const j = (await r.json().catch(() => ({}))) as { error?: string };
+      if (!r.ok) throw new Error(j.error || "فشل مسح اللون");
+      await branding.refetch();
+      setBrandPrimaryHexDraft("");
+      toast.success("تمت إعادة لون التمييز للافتراضي");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "فشل العملية");
+    } finally {
+      setBrandColorSaving(false);
+    }
+  };
+
   const onPickBrandingLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -546,6 +657,24 @@ export default function AdminHomeHeroDesignPage() {
   const brandingIdentityDirty =
     (branding.data?.name ?? "") !== brandingName || (branding.data?.logoUrl ?? null) !== brandingLogoUrl;
   const topStripDirty = (branding.data?.topStripImageUrl ?? null) !== brandingTopStripImageUrl;
+  const storedFb = (branding.data?.facebookUrl ?? "").trim();
+  const storedWa = (branding.data?.whatsappUrl ?? "").trim();
+  const socialLinksDirty =
+    storedFb !== socialFacebookUrl.trim() || storedWa !== socialWhatsappUrl.trim();
+  const storedSupportPhone = (branding.data?.supportPhone ?? "").trim();
+  const storedBb8Welcome = (branding.data?.bb8WelcomeText ?? "").trim();
+  const phoneBb8Dirty =
+    storedSupportPhone !== supportPhoneDraft.trim() || storedBb8Welcome !== bb8WelcomeDraft.trim();
+
+  const trimmedBrandHexDraft = brandPrimaryHexDraft.trim();
+  const parsedBrandPrimaryDraft =
+    trimmedBrandHexDraft === "" ? null : parseBrandPrimaryHex(brandPrimaryHexDraft);
+  const brandHexInvalid = trimmedBrandHexDraft !== "" && parsedBrandPrimaryDraft === null;
+  const serverBrandPrimaryHex = branding.data?.brandPrimaryHex ?? null;
+  const brandColorDirty =
+    brandHexInvalid || serverBrandPrimaryHex !== (parsedBrandPrimaryDraft ?? null);
+  const colorPickerValue =
+    parseBrandPrimaryHex(brandPrimaryHexDraft) ?? BRAND_PRIMARY_HEX_PREVIEW_FALLBACK;
 
   if (isError) return <p className="text-destructive">رفض الوصول أو خطأ في الخادم.</p>;
 
@@ -713,6 +842,149 @@ export default function AdminHomeHeroDesignPage() {
                 />
               </div>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-zinc-800 bg-zinc-900/70">
+        <CardHeader>
+          <CardTitle className="text-zinc-100">روابط التواصل السريع</CardTitle>
+          <CardDescription className="text-zinc-500">
+            أيقونات ثابتة في أسفل يمين الصفحة الرئيسية. اترك الحقل فارغاً لإخفاء الأيقونة المعنية.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label className="text-zinc-300">رابط فيسبوك</Label>
+            <Input
+              dir="ltr"
+              className="mt-1 border-zinc-700 bg-zinc-950 text-left"
+              value={socialFacebookUrl}
+              onChange={(e) => setSocialFacebookUrl(e.target.value)}
+              placeholder="https://www.facebook.com/..."
+            />
+          </div>
+          <div>
+            <Label className="text-zinc-300">رابط واتساب</Label>
+            <Input
+              dir="ltr"
+              className="mt-1 border-zinc-700 bg-zinc-950 text-left"
+              value={socialWhatsappUrl}
+              onChange={(e) => setSocialWhatsappUrl(e.target.value)}
+              placeholder="https://wa.me/9665xxxxxxxx"
+            />
+          </div>
+          <p className="text-xs text-zinc-500">
+            يُقبل الرابط فقط إذا بدأ بـ https:// أو http:// (لأسباب أمنية).
+          </p>
+          <Button
+            type="button"
+            variant="secondary"
+            className="bg-cyan-700/90 text-white hover:bg-cyan-700 disabled:opacity-50"
+            disabled={!socialLinksDirty || socialLinksSaving}
+            onClick={saveSocialLinks}
+          >
+            {socialLinksSaving ? "جاري الحفظ…" : "حفظ روابط التواصل"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="border-zinc-800 bg-zinc-900/70">
+        <CardHeader>
+          <CardTitle className="text-zinc-100">الهاتف ونص الروبوت</CardTitle>
+          <CardDescription className="text-zinc-500">
+            رقم الظاهر أعلى اليسار في الشريط الأسود مع أيقونة الهاتف، والجملة فوق الروبوت في الصفحة الرئيسية.
+            اترك أي حقل فارغاً إذا لم ترد عرضه على الموقع.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label className="text-zinc-300">رقم الهاتف (للعرض والاتصال)</Label>
+            <Input
+              dir="ltr"
+              className="mt-1 border-zinc-700 bg-zinc-950 text-left"
+              value={supportPhoneDraft}
+              onChange={(e) => setSupportPhoneDraft(e.target.value)}
+              placeholder="+2010... أو اتركه فارغاً"
+            />
+          </div>
+          <div>
+            <Label className="text-zinc-300">نص ترحيب الروبوت</Label>
+            <Input
+              className="mt-1 border-zinc-700 bg-zinc-950"
+              value={bb8WelcomeDraft}
+              onChange={(e) => setBb8WelcomeDraft(e.target.value)}
+              placeholder="اتركه فارغاً بدون نص ترحيب"
+            />
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            className="bg-cyan-700/90 text-white hover:bg-cyan-700 disabled:opacity-50"
+            disabled={!phoneBb8Dirty || phoneBb8Saving}
+            onClick={savePhoneAndBb8}
+          >
+            {phoneBb8Saving ? "جاري الحفظ…" : "حفظ الهاتف ونص الروبوت"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="border-zinc-800 bg-zinc-900/70">
+        <CardHeader>
+          <CardTitle className="text-zinc-100">لون تمييز الواجهة</CardTitle>
+          <CardDescription className="text-zinc-500">
+            لون الأزرار الرئيسية (مثل «أضف للسلة») والروابط المميزة وشارات المنتج وإطارات الأسعار وتسجيل الدخول
+            ولوحة الإدارة. اختر من لوحة الألوان أو اكتب كود hex. «إعادة الافتراضي» يُرجع لون الثيم الأصلي.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <Label className="text-zinc-300">لوحة الألوان</Label>
+              <input
+                type="color"
+                aria-label="اختيار لون التمييز"
+                className="mt-1 h-11 w-[4.25rem] cursor-pointer overflow-hidden rounded-md border border-zinc-600 bg-zinc-950 p-1"
+                value={colorPickerValue}
+                onChange={(e) => setBrandPrimaryHexDraft(e.target.value)}
+              />
+            </div>
+            <div className="min-w-[11rem] flex-1">
+              <Label className="text-zinc-300">كود اللون (#RRGGBB)</Label>
+              <Input
+                dir="ltr"
+                className="mt-1 border-zinc-700 bg-zinc-950 text-left font-mono text-sm"
+                value={brandPrimaryHexDraft}
+                onChange={(e) => setBrandPrimaryHexDraft(e.target.value)}
+                placeholder="#8b5cf6"
+              />
+            </div>
+          </div>
+          {brandHexInvalid ? (
+            <p className="text-xs text-amber-400">صيغة غير صالحة — استخدم #RRGGBB أو ستة أحرف hex</p>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              className="bg-cyan-700/90 text-white hover:bg-cyan-700 disabled:opacity-50"
+              disabled={!brandColorDirty || brandHexInvalid || brandColorSaving}
+              onClick={saveBrandPrimaryColor}
+            >
+              {brandColorSaving ? "جاري الحفظ…" : "حفظ اللون"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-zinc-600 text-zinc-200"
+              disabled={
+                brandColorSaving ||
+                (serverBrandPrimaryHex === null && trimmedBrandHexDraft === "")
+              }
+              onClick={clearBrandPrimaryColor}
+            >
+              إعادة الافتراضي
+            </Button>
           </div>
         </CardContent>
       </Card>

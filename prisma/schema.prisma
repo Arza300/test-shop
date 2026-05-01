@@ -230,6 +230,14 @@ model SiteBrandingSetting {
   name      String?
   logoUrl   String?
   topStripImageUrl String?
+  facebookUrl String?
+  whatsappUrl String?
+  /// رقم الظاهر بجانب أيقونة الهاتف في الشريط العلوي (نص الاتصال)
+  supportPhone   String?
+  /// النص فوق منطقة الروبوت BB-8 في الصفحة الرئيسية
+  bb8WelcomeText String?
+  /// لون تمييز الواجهة (أزرار، روابط، شارات) بتنسيق #RRGGBB
+  brandPrimaryHex String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

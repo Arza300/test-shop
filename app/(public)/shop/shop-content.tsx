@@ -95,7 +95,7 @@ export function ShopContent() {
       </div>
       {brandSlug ? (
         <div
-          className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-cyan-500/25 bg-cyan-950/25 px-3 py-2.5 text-sm"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary/25 bg-primary/10 px-3 py-2.5 text-sm"
           dir="rtl"
         >
           <span>

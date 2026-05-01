@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbo",
-    "dev:webpack": "next dev",
-    "dev:reset": "node scripts/clean-next.js && next dev --turbo",
+    "dev": "prisma generate && next dev --turbo",
+    "dev:webpack": "prisma generate && next dev",
+    "dev:reset": "node scripts/clean-next.js && prisma generate && next dev --turbo",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",

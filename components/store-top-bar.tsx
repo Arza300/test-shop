@@ -4,23 +4,29 @@ import Image from "next/image";
 import { Phone } from "lucide-react";
 import { useEffect, useState } from "react";
 import { shouldUnoptimizeImageSrc } from "@/lib/image-url";
+import { supportPhoneToTelHref } from "@/lib/support-phone-tel";
 
 const DEFAULT_TOP_STRIP_IMAGE = "/payments-strip.png";
 
 export function StoreTopBar() {
   const [topStripImageUrl, setTopStripImageUrl] = useState(DEFAULT_TOP_STRIP_IMAGE);
+  const [supportPhoneDisplay, setSupportPhoneDisplay] = useState("");
+  const phoneTelHref =
+    supportPhoneDisplay.trim() !== "" ? supportPhoneToTelHref(supportPhoneDisplay) : null;
 
   useEffect(() => {
     let alive = true;
     fetch("/api/public/site-branding")
       .then((r) => (r.ok ? r.json() : null))
-      .then((d: { topStripImageUrl?: string | null } | null) => {
+      .then((d: { topStripImageUrl?: string | null; supportPhone?: string | null } | null) => {
         if (!alive) return;
         setTopStripImageUrl(d?.topStripImageUrl || DEFAULT_TOP_STRIP_IMAGE);
+        setSupportPhoneDisplay(d?.supportPhone?.trim() ?? "");
       })
       .catch(() => {
         if (!alive) return;
         setTopStripImageUrl(DEFAULT_TOP_STRIP_IMAGE);
+        setSupportPhoneDisplay("");
       });
     return () => {
       alive = false;
@@ -41,13 +47,15 @@ export function StoreTopBar() {
             unoptimized={shouldUnoptimizeImageSrc(topStripImageUrl)}
           />
         </div>
-        <a
-          href="tel:16280"
-          className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm font-semibold text-amber-300 hover:text-amber-200 sm:text-base"
-        >
-          <Phone className="h-4 w-4 shrink-0" />
-          16280
-        </a>
+        {phoneTelHref ? (
+          <a
+            href={phoneTelHref}
+            className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm font-semibold text-amber-300 hover:text-amber-200 sm:text-base"
+          >
+            <Phone className="h-4 w-4 shrink-0" />
+            {supportPhoneDisplay}
+          </a>
+        ) : null}
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { HomeSocialFloat } from "@/components/home-social-float";
 import { HomeHeroSection, type HomeHeroSlideVisual } from "@/components/home-hero-section";
 import { Bb8DroidSection } from "@/components/bb8-droid-section";
 import { LeadingBrandsSection } from "@/components/leading-brands-section";
@@ -56,20 +57,36 @@ async function getHomeSectionOrder() {
   }
 }
 
-export default async function HomePage() {
-  const [rows, sidePanel, leadingBrands, customSections, homeSectionsOrder] = await Promise.all([
-    prisma.homeHeroSlide.findMany({
-      orderBy: { position: "asc" },
-      select: { imageUrl: true, headline: true, subline: true, linkedProductId: true },
-    }),
-    prisma.homeHeroSidePanel.findUnique({
+async function getSiteBrandingSocialLinks() {
+  try {
+    return await prisma.siteBrandingSetting.findUnique({
       where: { id: "main" },
-      select: { imageUrl: true, linkedProductId: true, linkedSectionId: true },
-    }),
-    getVisibleBrands(),
-    getVisibleCustomStoreSections(),
-    getHomeSectionOrder(),
-  ]);
+      select: { facebookUrl: true, whatsappUrl: true },
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2021") {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export default async function HomePage() {
+  const [rows, sidePanel, leadingBrands, customSections, homeSectionsOrder, siteBrandingSocial] =
+    await Promise.all([
+      prisma.homeHeroSlide.findMany({
+        orderBy: { position: "asc" },
+        select: { imageUrl: true, headline: true, subline: true, linkedProductId: true },
+      }),
+      prisma.homeHeroSidePanel.findUnique({
+        where: { id: "main" },
+        select: { imageUrl: true, linkedProductId: true, linkedSectionId: true },
+      }),
+      getVisibleBrands(),
+      getVisibleCustomStoreSections(),
+      getHomeSectionOrder(),
+      getSiteBrandingSocialLinks(),
+    ]);
 
   const slides: HomeHeroSlideVisual[] = rows.map((r) => ({
     image: resolveImageUrlForClient(r.imageUrl) ?? r.imageUrl,
@@ -95,6 +112,10 @@ export default async function HomePage() {
 
   return (
     <div className="w-full">
+      <HomeSocialFloat
+        facebookUrl={siteBrandingSocial?.facebookUrl}
+        whatsappUrl={siteBrandingSocial?.whatsappUrl}
+      />
       <HomeHeroSection
         slides={slides}
         sidePanelImageUrl={

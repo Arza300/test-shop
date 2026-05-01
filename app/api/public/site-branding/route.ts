@@ -14,5 +14,10 @@ export async function GET() {
     topStripImageUrl: row?.topStripImageUrl
       ? resolveImageUrlForClient(row.topStripImageUrl) ?? row.topStripImageUrl
       : null,
+    facebookUrl: row?.facebookUrl ?? null,
+    whatsappUrl: row?.whatsappUrl ?? null,
+    supportPhone: row?.supportPhone ?? null,
+    bb8WelcomeText: row?.bb8WelcomeText ?? null,
+    brandPrimaryHex: row?.brandPrimaryHex ?? null,
   });
 }
