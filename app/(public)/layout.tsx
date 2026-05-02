@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { brandPrimaryHexToCssProperties } from "@/lib/brand-primary-theme";
-import { getStoredBrandPrimaryHex } from "@/lib/site-branding-brand-hex-server";
+import { getPublicSiteBranding } from "@/lib/site-branding-brand-hex-server";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 
@@ -9,8 +9,8 @@ function HeaderFallback() {
 }
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
-  const brandHex = await getStoredBrandPrimaryHex();
-  const themeStyle = brandPrimaryHexToCssProperties(brandHex);
+  const branding = await getPublicSiteBranding();
+  const themeStyle = brandPrimaryHexToCssProperties(branding.brandPrimaryHex);
 
   return (
     <div className="dark flex min-h-full flex-col bg-store-bg text-foreground" style={themeStyle}>
@@ -18,7 +18,7 @@ export default async function PublicLayout({ children }: { children: React.React
         <SiteHeader />
       </Suspense>
       <main className="flex-1 w-full">{children}</main>
-      <SiteFooter />
+      <SiteFooter brandName={branding.name} brandLogoUrl={branding.logoUrl} />
     </div>
   );
 }
